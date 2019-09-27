@@ -108,3 +108,6 @@ venv.bak/
 
 # Extra configuration file for youcompleteme
 .ycm_extra_conf.py
+
+# Data folder
+data/
