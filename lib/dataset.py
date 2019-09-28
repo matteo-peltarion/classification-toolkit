@@ -107,12 +107,16 @@ def show_images(images, cols=1, titles=None):
     plt.show()
 
 
-def create_train_val_split(data_dir, train_fraction, val_fraction):
+def create_train_val_split(data_dir,
+                           train_fraction, val_fraction,
+                           random_state=123):
     """Split data into training and validation sets, based on given fractions.
 
     Args:
         train_fraction (float): fraction of data to use for training.
         val_fraction (float): fraction of data to use for training.
+        random_state (int): seed for the random generator (for
+                            reproducibility).
 
     Returns:
         (tuple): tuple with training image IDs and validation image IDs.
@@ -120,14 +124,44 @@ def create_train_val_split(data_dir, train_fraction, val_fraction):
     """
     assert(train_fraction + val_fraction <= 1.0)
 
+    # TODO move this somewhere else
+    LABEL_COLUMN = 'dx'
+    # IMAGE_ID_COLUMN = 'image_id'
+
     # TODO: Implement a proper training/validation split
     meta_data = read_meta_data(data_dir)
-    image_ids = meta_data.index.tolist()
-    num_images = len(image_ids)
-    num_train_ids = int(num_images * train_fraction)
-    num_val_ids = int(num_images * val_fraction)
-    train_ids = image_ids[:num_train_ids]
-    val_ids = image_ids[-num_val_ids:]
+
+    train_ids = list()
+    val_ids = list()
+
+    for gg in meta_data.groupby(LABEL_COLUMN):
+        # category = gg[0]
+        group_df = gg[1]
+
+        n = len(group_df)
+
+        # Retrieve number of
+        n_tr = int(n*train_fraction)
+
+        # To get as much data as possible
+        if (train_fraction + val_fraction == 1.0):
+            n_vd = n - n_tr
+        else:
+            n_vd = int(n*val_fraction)
+
+        # This is just used for shuffling, returns the whole group because of
+        # frac=1.0
+        group_ids = group_df.sample(
+            frac=1.0, random_state=random_state).index.to_list()
+
+        # Get ids for training and validation set
+        group_ids_train = group_ids[:n_tr]
+        group_ids_val = group_ids[n_tr:n_tr+n_vd]
+
+        # Add ids to ids list
+        train_ids.extend(group_ids_train)
+        val_ids.extend(group_ids_val)
+
     return train_ids, val_ids
 
 
