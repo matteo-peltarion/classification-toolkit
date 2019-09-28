@@ -254,3 +254,43 @@ class HAM10000(Dataset):
         img = transforms.ToTensor()(img)
 
         return img, label
+
+    def make_weights_for_balanced_classes(self):
+        """Function used to return weights for WeightedRandomSampler
+
+        Inspired by:
+            https://discuss.pytorch.org/t/balanced-sampling-between-classes-with-torchvision-dataloader/2703/3
+        """
+
+        count = [0] * self.get_num_classes()
+
+        # label = self.class_map_dict[self.meta_data.loc[image_id]['dx']]
+        labels = [self.class_map_dict[l] for l in self.get_labels()]
+
+        # print(labels)
+
+        # Count how many instances there are for each class
+        for l in labels:
+            count[l] += 1
+
+        weight_per_class = [0.] * self.get_num_classes()
+
+        N = float(sum(count))
+
+        # Assign a weight which is inversely proportional to class frequency
+        for i in range(self.get_num_classes()):
+            weight_per_class[i] = N/float(count[i])
+
+        # print("Weights per class:")
+        # print(weight_per_class)
+
+        # Save results for debugging purposes
+        self._weight_per_class = weight_per_class
+
+        # Now assign a weight to each data point
+        weight = [0] * len(labels)
+
+        for idx, val in enumerate(labels):
+            weight[idx] = weight_per_class[val]
+
+        return weight
