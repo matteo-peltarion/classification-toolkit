@@ -111,3 +111,6 @@ venv.bak/
 
 # Data folder
 data/
+
+# Experiments folder
+experiments/
