@@ -109,10 +109,10 @@ def train(net, train_loader, criterion, optimizer,
 
 
 def test(net, val_loader, criterion,
-         batch_size, device, epoch, logger, exp_dir):
+         batch_size, device, epoch, logger, exp_dir, best_acc):
 
     # TODO nuke this
-    global best_acc
+    # global best_acc
 
     net.eval()
     test_loss = 0
@@ -151,7 +151,7 @@ def test(net, val_loader, criterion,
     else:
         save_checkpoint(state, exp_dir, backup_as_best=False)
 
-    return test_loss/(batch_idx+1)
+    return test_loss/(batch_idx+1), best_acc
 
 
 def main():
@@ -178,9 +178,6 @@ def main():
     else:
         device = 'cpu'
         logger.info('==> CUDA unavailable, Running on CPU :(')
-
-    # TODO move somewhere else
-    best_acc = 0  # best test accuracy
 
     npy_file = os.path.join(exp_dir, 'final_results.npy')
 
@@ -243,6 +240,9 @@ def main():
     # Stop here, for debugging
     # return
 
+    # Init best acc
+    best_acc = 0  # best test accuracy
+
     for epoch in range(0, args.num_epochs):
 
         # Train for one epoch
@@ -253,10 +253,10 @@ def main():
 
         # Test results
         # test_loss = test(epoch)
-        test_loss = test(
+        test_loss, best_acc = test(
             net, val_loader, criterion,
             args.batch_size, device, epoch,
-            logger, exp_dir)
+            logger, exp_dir, best_acc)
 
         test_losses.append(test_loss)
 
