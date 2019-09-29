@@ -4,8 +4,8 @@
 python main.py \
     --num-epochs 50 \
     --batch-size 8 \
-    --network SimpleCNN \
-    --lr 0.0001 \
-    --resume
-    #--network Alexnet
+    --lr 0.001 \
+    --network Alexnet
+    #--network SimpleCNN
+    #--resume
     #--network VGG16

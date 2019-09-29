@@ -249,7 +249,6 @@ def get_data_augmentation_transforms():
         # transforms.ToTensor(),
         # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
-    # pass
     # First create the list of transforms, add each one individually (for
     # better code readability), then return a composition of all the
     # transforms.
@@ -262,8 +261,8 @@ def get_data_augmentation_transforms():
     # transforms_list.append(transforms.RandomApply([crop_transform], p=0.5))
 
     # Horizontal/vertical flip with 0.5 chance
-    # transforms_list.append(transforms.RandomHorizontalFlip(0.5))
-    # transforms_list.append(transforms.RandomVerticalFlip(0.5))
+    transforms_list.append(transforms.RandomHorizontalFlip(0.5))
+    transforms_list.append(transforms.RandomVerticalFlip(0.5))
 
     transforms_list.append(transforms.ToTensor())
     # transforms_list.append(transforms.Normalize(
@@ -284,7 +283,7 @@ def main():
 
     # Writer will output to ./runs/ directory by default
     # writer = SummaryWriter(os.path.join(exp_dir, "tb_log"))
-    writer = SummaryWriter(comment=args.network)
+    writer = SummaryWriter(comment=args.exp_name)
 
     # Logging
     logger = logging.getLogger(__name__)
@@ -322,9 +321,6 @@ def main():
     train_set = HAM10000(
         args.data_dir, train_ids,
         transforms=get_data_augmentation_transforms())
-
-    # train_set = HAM10000(
-        # args.data_dir, train_ids)
 
     val_set = HAM10000(args.data_dir, val_ids)
 
@@ -395,9 +391,11 @@ def main():
     # optimizer = optim.Adam(net.parameters(), lr=lr)
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
 
-    # Log learning rate
-    for param_group in optimizer.param_groups:
-        logger.info('Learning rate: {}'.format(param_group['lr']))
+    # TODO Move in argument parser!
+    milestones = [10, 25, 50]
+
+    lr_scheduler = optim.lr_scheduler.MultiStepLR(
+        optimizer, milestones=milestones, gamma=0.1)
 
     epochs, train_losses, test_losses = [], [], []
 
@@ -408,6 +406,10 @@ def main():
     for epoch in range(start_epoch, args.num_epochs):
 
         tic = time.time()
+
+        # Print learning rate
+        for param_group in optimizer.param_groups:
+            logger.info('Learning rate: {}'.format(param_group['lr']))
 
         # Train for one epoch
         train_loss = train(
@@ -453,6 +455,8 @@ def main():
         create_loss_plot(exp_dir, epochs, train_losses, test_losses)
 
         np.save(npy_file, [train_losses, test_losses])
+
+        lr_scheduler.step()
 
     writer.close()
 
