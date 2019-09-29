@@ -2,4 +2,4 @@
 
 # Just launch training with one single command
 python main.py \
-    --num-epochs 1
+    --num-epochs 10

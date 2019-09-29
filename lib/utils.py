@@ -5,11 +5,14 @@ from os.path import join
 import shutil
 import logging
 
-import matplotlib
+import pandas as pd
+
+import matplotlib  # noqa
 import matplotlib.pyplot as plt
 import torch
 
 LOG_FORMAT = '%(asctime)-15s %(levelname)-5s %(name)-15s - %(message)s'
+
 
 def create_loss_plot(exp_dir, epochs, train_losses, test_losses):
     """Plot losses and save.
@@ -21,7 +24,7 @@ def create_loss_plot(exp_dir, epochs, train_losses, test_losses):
         test_losses (list): list with test loss during each epoch.
 
     """
-    f = plt.figure()
+    f = plt.figure()  # noqa
     plt.title("Loss plot")
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
@@ -32,7 +35,8 @@ def create_loss_plot(exp_dir, epochs, train_losses, test_losses):
     plt.savefig(join(exp_dir, 'loss.png'))
 
 
-def setup_logging(log_path=None, log_level='DEBUG', logger=None, fmt=LOG_FORMAT):
+def setup_logging(log_path=None, log_level='DEBUG',
+                  logger=None, fmt=LOG_FORMAT):
     """Prepare logging for the provided logger.
 
     Args:
@@ -79,3 +83,22 @@ def save_checkpoint(state, target_dir, file_name='checkpoint.pth.tar',
     torch.save(state, target_model_path)
     if backup_as_best:
         shutil.copyfile(target_model_path, best_model_path)
+
+
+def cm2df(cm, labels):
+    """Print on terminal a confusion_matrix using class labels
+    Taken from https://stackoverflow.com/questions/50325786/sci-kit-learn-how-to-print-labels-for-confusion-matrix # noqa
+    """
+
+    df = pd.DataFrame()
+    # rows
+    for i, row_label in enumerate(labels):
+        rowdata = {}
+        # columns
+        for j, col_label in enumerate(labels):
+            rowdata[col_label] = cm[i, j]
+
+        df = df.append(pd.DataFrame.from_dict(
+            {row_label: rowdata}, orient='index'))
+
+    return df[labels]

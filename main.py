@@ -9,9 +9,13 @@ import logging
 
 import argparse
 
+from tqdm import tqdm
+
 import matplotlib
 
 matplotlib.use('agg')
+
+from sklearn.metrics import confusion_matrix
 
 import numpy as np
 
@@ -24,6 +28,8 @@ from torch.utils.data.dataloader import DataLoader
 
 from torch.utils.data import WeightedRandomSampler
 
+from torch.utils.tensorboard import SummaryWriter
+
 import torch
 # import torch.backends.cudnn as cudnn
 
@@ -32,7 +38,7 @@ from networks.SimpleCNN import SimpleCNN
 # Experiment specific imports
 from lib.dataset import create_train_val_split, HAM10000
 
-from lib.utils import setup_logging, save_checkpoint, create_loss_plot
+from lib.utils import setup_logging, save_checkpoint, create_loss_plot, cm2df
 
 # Collect constants in separate file, C headers style.
 import constants
@@ -75,9 +81,13 @@ def parse_args():
 
 # Training.
 def train(net, train_loader, criterion, optimizer,
-          batch_size, device, epoch, logger):
+          batch_size, device, epoch, logger, writer):
     """Performs training for one epoch
     """
+
+    # TODO move in arguments
+    # print message only every N batches
+    print_every = 50
 
     logger.info('Epoch: %d' % epoch)
 
@@ -87,7 +97,9 @@ def train(net, train_loader, criterion, optimizer,
     correct = 0
     total = 0
 
-    n_batches = len(train_loader.dataset) // batch_size
+    # Needs to be changed because of the DL sampler
+    # n_batches = len(train_loader.dataset) // batch_size
+    n_batches = len(train_loader)
 
     for batch_idx, (inputs, targets) in enumerate(train_loader):
         inputs, targets = inputs.to(device), targets.to(device)
@@ -102,20 +114,18 @@ def train(net, train_loader, criterion, optimizer,
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        logger.info(constants.STATUS_MSG.format(
-            batch_idx+1,
-            n_batches,
-            train_loss/(batch_idx+1),
-            100.*correct/total))
+        if (batch_idx + 1) % print_every == 0:
+            logger.info(constants.STATUS_MSG.format(
+                batch_idx+1,
+                n_batches,
+                train_loss/(batch_idx+1),
+                100.*correct/total))
 
     return train_loss/(batch_idx+1)
 
 
 def test(net, val_loader, criterion,
-         batch_size, device, epoch, logger, exp_dir, best_acc):
-
-    # TODO nuke this
-    # global best_acc
+         batch_size, device, epoch, logger, writer, exp_dir, best_acc):
 
     net.eval()
     test_loss = 0
@@ -123,21 +133,44 @@ def test(net, val_loader, criterion,
     total = 0
     n_batches = len(val_loader.dataset) // batch_size
 
+    all_targets = np.array([], dtype=int)
+    all_predicted = np.array([], dtype=int)
+
     with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(val_loader):
+        for batch_idx, (inputs, targets) in tqdm(
+                enumerate(val_loader), total=n_batches):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
             _, predicted = outputs.max(1)
+
+            # TODO probably should throw away this stuff here
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
-            logger.info(constants.STATUS_MSG.format(batch_idx+1,
-                        n_batches,
-                        test_loss/(batch_idx+1),
-                        100.*correct/total))
+            # Save all for confusion matrix
+            all_targets = np.hstack(
+                (all_targets, targets.cpu().numpy().astype(int)))
+
+            all_predicted = np.hstack(
+                (all_predicted, predicted.cpu().numpy().astype(int)))
+
+            # if (batch_idx + 1) % print_every == 0:
+                # logger.info(constants.STATUS_MSG.format(batch_idx+1,
+                            # n_batches,
+                            # test_loss/(batch_idx+1),
+                            # 100.*correct/total))
+
+    acc2 = 100*(all_predicted == all_targets).sum()/total
+
+    # Display confusion matrix
+    cm = confusion_matrix(all_targets, all_predicted)
+
+    cm_pretty = cm2df(cm, val_loader.dataset.class_map_dict)
+
+    print(cm_pretty)
 
     # Save checkpoint.
     acc = 100.*correct/total
@@ -146,6 +179,12 @@ def test(net, val_loader, criterion,
         'acc': acc,
         'epoch': epoch,
     }
+
+    # Display accuracy
+    logger.info("Accuracy on validation set after epoch {}: {}".format(
+        epoch, acc))
+    logger.info("Accuracy on validation set after epoch {}: {}".format(
+        epoch, acc2))
 
     if acc > best_acc:
         logger.info('Saving..')
@@ -164,6 +203,10 @@ def main():
     exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
 
     os.makedirs(exp_dir, exist_ok=True)
+
+    # Writer will output to ./runs/ directory by default
+    # writer = SummaryWriter(os.path.join(exp_dir, "tb_log"))
+    writer = SummaryWriter()
 
     # Logging
     logger = logging.getLogger(__name__)
@@ -262,7 +305,7 @@ def main():
         # Train for one epoch
         train_loss = train(
             net, train_loader, criterion, optimizer,
-            args.batch_size, device, epoch, logger)
+            args.batch_size, device, epoch, logger, writer)
 
         toc = time.time()
 
@@ -281,7 +324,7 @@ def main():
         test_loss, best_acc = test(
             net, val_loader, criterion,
             args.batch_size, device, epoch,
-            logger, exp_dir, best_acc)
+            logger, writer, exp_dir, best_acc)
 
         toc = time.time()
 
@@ -294,9 +337,18 @@ def main():
 
         epochs.append(epoch)
 
+        # Add scalars to tb
+        writer.add_scalars(
+            'loss', {
+                'train': train_loss,
+                'val': test_loss},
+            epoch)
+
         create_loss_plot(exp_dir, epochs, train_losses, test_losses)
 
         np.save(npy_file, [train_losses, test_losses])
+
+    writer.close()
 
 
 if __name__ == '__main__':
