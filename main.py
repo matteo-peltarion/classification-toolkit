@@ -15,6 +15,8 @@ import matplotlib
 
 matplotlib.use('agg')
 
+from sklearn.metrics import confusion_matrix
+
 import numpy as np
 
 # Torch stuff
@@ -34,7 +36,7 @@ from networks.SimpleCNN import SimpleCNN
 # Experiment specific imports
 from lib.dataset import create_train_val_split, HAM10000
 
-from lib.utils import setup_logging, save_checkpoint, create_loss_plot
+from lib.utils import setup_logging, save_checkpoint, create_loss_plot, cm2df
 
 # Collect constants in separate file, C headers style.
 import constants
@@ -129,6 +131,9 @@ def test(net, val_loader, criterion,
     total = 0
     n_batches = len(val_loader.dataset) // batch_size
 
+    all_targets = np.array([], dtype=int)
+    all_predicted = np.array([], dtype=int)
+
     with torch.no_grad():
         for batch_idx, (inputs, targets) in tqdm(
                 enumerate(val_loader), total=n_batches):
@@ -138,14 +143,32 @@ def test(net, val_loader, criterion,
 
             test_loss += loss.item()
             _, predicted = outputs.max(1)
+
+            # TODO probably should throw away this stuff here
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
+
+            # Save all for confusion matrix
+            all_targets = np.hstack(
+                (all_targets, targets.cpu().numpy().astype(int)))
+
+            all_predicted = np.hstack(
+                (all_predicted, predicted.cpu().numpy().astype(int)))
 
             # if (batch_idx + 1) % print_every == 0:
                 # logger.info(constants.STATUS_MSG.format(batch_idx+1,
                             # n_batches,
                             # test_loss/(batch_idx+1),
                             # 100.*correct/total))
+
+    acc2 = 100*(all_predicted == all_targets).sum()/total
+
+    # Display confusion matrix
+    cm = confusion_matrix(all_targets, all_predicted)
+
+    cm_pretty = cm2df(cm, val_loader.dataset.class_map_dict)
+
+    print(cm_pretty)
 
     # Save checkpoint.
     acc = 100.*correct/total
@@ -158,6 +181,8 @@ def test(net, val_loader, criterion,
     # Display accuracy
     logger.info("Accuracy on validation set after epoch {}: {}".format(
         epoch, acc))
+    logger.info("Accuracy on validation set after epoch {}: {}".format(
+        epoch, acc2))
 
     if acc > best_acc:
         logger.info('Saving..')
