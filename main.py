@@ -33,7 +33,13 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 # import torch.backends.cudnn as cudnn
 
-from networks.SimpleCNN import SimpleCNN
+# Network options
+from networks.SimpleCNN import SimpleCNN, MyCNN
+
+from torchvision.models.vgg import vgg16
+from torchvision.models.alexnet import alexnet
+
+import torchvision.transforms as transforms
 
 # Experiment specific imports
 from lib.dataset import create_train_val_split, HAM10000
@@ -68,7 +74,7 @@ def parse_args():
                         help='batch-size to use')
 
     parser.add_argument('--network', default='SimpleCNN',
-                        choices=['SimpleCNN'],
+                        choices=['SimpleCNN', 'VGG16', 'Alexnet'],
                         help='network architecture')
 
     parser.add_argument('--num-epochs', default=10, type=int,
@@ -102,24 +108,52 @@ def train(net, train_loader, criterion, optimizer,
     n_batches = len(train_loader)
 
     for batch_idx, (inputs, targets) in enumerate(train_loader):
+
+        # Send tensors to the appropriate device
         inputs, targets = inputs.to(device), targets.to(device)
+
+        # Set gradients to 0
         optimizer.zero_grad()
+
+        # Forward pass
         outputs = net(inputs)
+
+        # Compute loss
         loss = criterion(outputs, targets)
+
+        # Backprop
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
+
         _, predicted = outputs.max(1)
+
         total += targets.size(0)
+
         correct += predicted.eq(targets).sum().item()
 
         if (batch_idx + 1) % print_every == 0:
+
+            # print("outputs")
+            # print(outputs)
+            # print("targets")
+            # print(targets)
+            # for p,n in zip(net.parameters(),net._all_weights[0]):
+                # if n[:6] == 'weight':
+                    # print('===========\ngradient:{}\n----------\n{}'.format(n,p.grad))
+
             logger.info(constants.STATUS_MSG.format(
                 batch_idx+1,
                 n_batches,
                 train_loss/(batch_idx+1),
                 100.*correct/total))
+
+    # Print gradients
+    # for p in net.parameters():
+        # print(p)
+        # print(p.size())
+        # print(p.grad)
 
     return train_loss/(batch_idx+1)
 
@@ -163,7 +197,7 @@ def test(net, val_loader, criterion,
                             # test_loss/(batch_idx+1),
                             # 100.*correct/total))
 
-    acc2 = 100*(all_predicted == all_targets).sum()/total
+    # acc2 = 100*(all_predicted == all_targets).sum()/total
 
     # Display confusion matrix
     cm = confusion_matrix(all_targets, all_predicted)
@@ -182,9 +216,9 @@ def test(net, val_loader, criterion,
 
     # Display accuracy
     logger.info("Accuracy on validation set after epoch {}: {}".format(
-        epoch, acc))
-    logger.info("Accuracy on validation set after epoch {}: {}".format(
-        epoch, acc2))
+        epoch+1, acc))
+    # logger.info("Accuracy on validation set after epoch {}: {}".format(
+        # epoch, acc2))
 
     if acc > best_acc:
         logger.info('Saving..')
@@ -194,6 +228,44 @@ def test(net, val_loader, criterion,
         save_checkpoint(state, exp_dir, backup_as_best=False)
 
     return test_loss/(batch_idx+1), best_acc
+
+
+def get_data_augmentation_transforms():
+    """Returns the list of transforms to be applied to the training dataset
+       only, for data augmentation.
+    """
+
+    # Keep this as an example
+    # transform = transforms.Compose([
+        # transforms.Resize(256),
+        # transforms.RandomCrop(224),
+        # transforms.RandomHorizontalFlip(),
+        # transforms.ToTensor(),
+        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+    # pass
+    # First create the list of transforms, add each one individually (for
+    # better code readability), then return a composition of all the
+    # transforms.
+
+    transforms_list = list()
+
+    # A random resized crop
+    # crop_transform = transforms.RandomResizedCrop(
+        # (450, 600), scale=(0.8, 1.0), ratio=(1, 1))
+    # transforms_list.append(transforms.RandomApply([crop_transform], p=0.5))
+
+    # Horizontal/vertical flip with 0.5 chance
+    transforms_list.append(transforms.RandomHorizontalFlip(0.5))
+    transforms_list.append(transforms.RandomVerticalFlip(0.5))
+
+    transforms_list.append(transforms.ToTensor())
+    # transforms_list.append(transforms.Normalize(
+        # (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
+
+    # Add normalization?
+
+    return transforms.Compose(transforms_list)
 
 
 def main():
@@ -206,7 +278,7 @@ def main():
 
     # Writer will output to ./runs/ directory by default
     # writer = SummaryWriter(os.path.join(exp_dir, "tb_log"))
-    writer = SummaryWriter()
+    writer = SummaryWriter(comment=args.network)
 
     # Logging
     logger = logging.getLogger(__name__)
@@ -241,7 +313,13 @@ def main():
 
     # Load datasets
     # TODO add transforms for data augmentation for train_set HHH
-    train_set = HAM10000(args.data_dir, train_ids)
+    train_set = HAM10000(
+        args.data_dir, train_ids,
+        transforms=get_data_augmentation_transforms())
+
+    # train_set = HAM10000(
+        # args.data_dir, train_ids)
+
     val_set = HAM10000(args.data_dir, val_ids)
 
     weights = train_set.make_weights_for_balanced_classes()
@@ -271,6 +349,18 @@ def main():
 
     if args.network == 'SimpleCNN':
         net = SimpleCNN(num_classes=num_classes)
+        # net = MyCNN(num_classes=num_classes)
+    elif args.network == 'Alexnet':
+        net = alexnet(pretrained=False, num_classes=num_classes)
+        # net = alexnet(pretrained=True, num_classes=num_classes)
+    elif args.network == 'VGG16':
+        net = vgg16(num_classes=num_classes)
+
+    # Print gradients
+    # for p in net.parameters():
+        # print(p)
+        # print(p.size())
+        # print(p.grad)
 
     net = net.to(device)
 
@@ -284,7 +374,7 @@ def main():
     criterion = nn.CrossEntropyLoss()
 
     # Optimizer
-    optimizer = optim.Adam(net.parameters())
+    optimizer = optim.Adam(net.parameters(), lr=1e-3)
 
     epochs, train_losses, test_losses = [], [], []
 
@@ -314,7 +404,7 @@ def main():
         train_losses.append(train_loss)
 
         logger.info("Training for epoch {} took {} s.".format(
-            epoch, dt_train))
+            epoch+1, dt_train))
 
         # Reset tic for test
         tic = toc
@@ -333,7 +423,7 @@ def main():
         times_val.append(dt_val)
 
         logger.info("Validation for epoch {} took {} s.".format(
-            epoch, dt_val))
+            epoch+1, dt_val))
 
         epochs.append(epoch)
 
