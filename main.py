@@ -38,6 +38,7 @@ from networks.SimpleCNN import SimpleCNN, MyCNN
 
 from torchvision.models.vgg import vgg16
 from torchvision.models.alexnet import alexnet
+from torchvision.models.resnet import resnet50, resnet34
 
 import torchvision.transforms as transforms
 
@@ -77,7 +78,9 @@ def parse_args():
                         help='Learning rate')
 
     parser.add_argument('--network', default='SimpleCNN',
-                        choices=['SimpleCNN', 'VGG16', 'Alexnet'],
+                        choices=[
+                            'SimpleCNN', 'VGG16', 'Alexnet', 'resnet34',
+                            'resnet50'],
                         help='network architecture')
 
     parser.add_argument('--num-epochs', default=10, type=int,
@@ -357,9 +360,10 @@ def main():
         # net = MyCNN(num_classes=num_classes)
     elif args.network == 'Alexnet':
         net = alexnet(pretrained=False, num_classes=num_classes)
-        # net = alexnet(pretrained=True)
-        # net.classifier[6] = nn.Linear(4096,num_classes)
-        # net = alexnet(pretrained=True, num_classes=num_classes)
+    elif args.network == 'resnet34':
+        net = resnet34(num_classes=num_classes)
+    elif args.network == 'resnet50':
+        net = resnet50(num_classes=num_classes)
     elif args.network == 'VGG16':
         net = vgg16(num_classes=num_classes)
 
