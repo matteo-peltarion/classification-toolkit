@@ -33,6 +33,7 @@ def create_loss_plot(exp_dir, epochs, train_losses, test_losses):
     plt.plot(epochs, test_losses, 'r', marker='o', label='test loss')
     plt.legend()
     plt.savefig(join(exp_dir, 'loss.png'))
+    plt.close(f)
 
 
 def setup_logging(log_path=None, log_level='DEBUG',
