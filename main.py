@@ -9,6 +9,8 @@ import logging
 
 import argparse
 
+from tqdm import tqdm
+
 import matplotlib
 
 matplotlib.use('agg')
@@ -79,6 +81,10 @@ def train(net, train_loader, criterion, optimizer,
     """Performs training for one epoch
     """
 
+    # TODO move in arguments
+    # print message only every N batches
+    print_every = 50
+
     logger.info('Epoch: %d' % epoch)
 
     net.train()
@@ -104,20 +110,18 @@ def train(net, train_loader, criterion, optimizer,
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        logger.info(constants.STATUS_MSG.format(
-            batch_idx+1,
-            n_batches,
-            train_loss/(batch_idx+1),
-            100.*correct/total))
+        if (batch_idx + 1) % print_every == 0:
+            logger.info(constants.STATUS_MSG.format(
+                batch_idx+1,
+                n_batches,
+                train_loss/(batch_idx+1),
+                100.*correct/total))
 
     return train_loss/(batch_idx+1)
 
 
 def test(net, val_loader, criterion,
          batch_size, device, epoch, logger, exp_dir, best_acc):
-
-    # TODO nuke this
-    # global best_acc
 
     net.eval()
     test_loss = 0
@@ -126,7 +130,8 @@ def test(net, val_loader, criterion,
     n_batches = len(val_loader.dataset) // batch_size
 
     with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(val_loader):
+        for batch_idx, (inputs, targets) in tqdm(
+                enumerate(val_loader), total=n_batches):
             inputs, targets = inputs.to(device), targets.to(device)
             outputs = net(inputs)
             loss = criterion(outputs, targets)
@@ -136,10 +141,11 @@ def test(net, val_loader, criterion,
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
-            logger.info(constants.STATUS_MSG.format(batch_idx+1,
-                        n_batches,
-                        test_loss/(batch_idx+1),
-                        100.*correct/total))
+            # if (batch_idx + 1) % print_every == 0:
+                # logger.info(constants.STATUS_MSG.format(batch_idx+1,
+                            # n_batches,
+                            # test_loss/(batch_idx+1),
+                            # 100.*correct/total))
 
     # Save checkpoint.
     acc = 100.*correct/total
@@ -148,6 +154,10 @@ def test(net, val_loader, criterion,
         'acc': acc,
         'epoch': epoch,
     }
+
+    # Display accuracy
+    logger.info("Accuracy on validation set after epoch {}: {}".format(
+        epoch, acc))
 
     if acc > best_acc:
         logger.info('Saving..')
