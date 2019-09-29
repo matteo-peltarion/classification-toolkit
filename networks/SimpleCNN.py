@@ -80,15 +80,15 @@ class SimpleCNN(nn.Module):
         super(SimpleCNN, self).__init__()
 
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
-        nn.init.xavier_uniform(self.conv1.weight)
+        nn.init.xavier_uniform_(self.conv1.weight)
 
         self.pool = nn.MaxPool2d(kernel_size=8, padding=0)
 
         self.fc1 = nn.Linear(32 * 56 * 75, 64)
-        nn.init.xavier_uniform(self.fc1.weight)
+        nn.init.xavier_uniform_(self.fc1.weight)
 
         self.fc2 = nn.Linear(64, num_classes)
-        nn.init.xavier_uniform(self.fc2.weight)
+        nn.init.xavier_uniform_(self.fc2.weight)
 
     def forward(self, x):
         x = F.relu(self.conv1(x))

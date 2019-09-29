@@ -76,12 +76,18 @@ def save_checkpoint(state, target_dir, file_name='checkpoint.pth.tar',
         file_name (str): the name of the checkpoint.
 
     """
-    best_model_path = os.path.join(target_dir, 'model_best.pth.tar')
     target_model_path = os.path.join(target_dir, file_name)
 
     os.makedirs(target_dir, exist_ok=True)
     torch.save(state, target_model_path)
+
+    latest_model_path = os.path.join(target_dir, "model_latest.pth.tar")
+
+    # Also copy as latest
+    shutil.copyfile(target_model_path, latest_model_path)
+
     if backup_as_best:
+        best_model_path = os.path.join(target_dir, 'model_best.pth.tar')
         shutil.copyfile(target_model_path, best_model_path)
 
 

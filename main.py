@@ -73,12 +73,18 @@ def parse_args():
     parser.add_argument('--batch-size', default=4, type=int,
                         help='batch-size to use')
 
+    parser.add_argument('--lr', default=1e-3, type=float,
+                        help='Learning rate')
+
     parser.add_argument('--network', default='SimpleCNN',
                         choices=['SimpleCNN', 'VGG16', 'Alexnet'],
                         help='network architecture')
 
     parser.add_argument('--num-epochs', default=10, type=int,
                         help='Number of training epochs')
+
+    parser.add_argument('--resume', '-r',
+                        action='store_true', help='resume from checkpoint')
 
     args = parser.parse_args()
 
@@ -95,7 +101,7 @@ def train(net, train_loader, criterion, optimizer,
     # print message only every N batches
     print_every = 50
 
-    logger.info('Epoch: %d' % epoch)
+    logger.info('Epoch: {}'.format(epoch + 1))
 
     net.train()
 
@@ -256,8 +262,8 @@ def get_data_augmentation_transforms():
     # transforms_list.append(transforms.RandomApply([crop_transform], p=0.5))
 
     # Horizontal/vertical flip with 0.5 chance
-    transforms_list.append(transforms.RandomHorizontalFlip(0.5))
-    transforms_list.append(transforms.RandomVerticalFlip(0.5))
+    # transforms_list.append(transforms.RandomHorizontalFlip(0.5))
+    # transforms_list.append(transforms.RandomVerticalFlip(0.5))
 
     transforms_list.append(transforms.ToTensor())
     # transforms_list.append(transforms.Normalize(
@@ -327,9 +333,12 @@ def main():
     # train_sampler = RandomSampler(train_set)
 
     # N_samples_per_epoch = len(weights)
-    # This one is sort of eyballed based on a few assumptions
+    # This one is sort of eyeballed based on a few assumptions
     # TODO explain
-    N_samples_per_epoch = 280 * 7
+    N_samples_per_epoch = 50 * 7 * args.batch_size
+
+    # For finding appropriate lr
+    # N_samples_per_epoch = 50 * 7
     train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
 
     num_classes = train_set.get_num_classes()
@@ -352,15 +361,24 @@ def main():
         # net = MyCNN(num_classes=num_classes)
     elif args.network == 'Alexnet':
         net = alexnet(pretrained=False, num_classes=num_classes)
+        # net = alexnet(pretrained=True)
+        # net.classifier[6] = nn.Linear(4096,num_classes)
         # net = alexnet(pretrained=True, num_classes=num_classes)
     elif args.network == 'VGG16':
         net = vgg16(num_classes=num_classes)
 
-    # Print gradients
-    # for p in net.parameters():
-        # print(p)
-        # print(p.size())
-        # print(p.grad)
+    if args.resume:
+        # Load checkpoint.
+        logger.info('==> Resuming from checkpoint..')
+        # assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+        checkpoint = torch.load(
+            os.path.join(exp_dir, "model_latest.pth.tar"))
+        net.load_state_dict(checkpoint['net'])
+        best_acc = checkpoint['acc']
+        start_epoch = checkpoint['epoch']
+    else:
+        best_acc = 0
+        start_epoch = 0
 
     net = net.to(device)
 
@@ -374,21 +392,20 @@ def main():
     criterion = nn.CrossEntropyLoss()
 
     # Optimizer
-    optimizer = optim.Adam(net.parameters(), lr=1e-3)
+    # optimizer = optim.Adam(net.parameters(), lr=lr)
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
+
+    # Log learning rate
+    for param_group in optimizer.param_groups:
+        logger.info('Learning rate: {}'.format(param_group['lr']))
 
     epochs, train_losses, test_losses = [], [], []
-
-    # Stop here, for debugging
-    # return
-
-    # Init best acc
-    best_acc = 0  # best test accuracy
 
     # Keep an eye on how long it takes to train for one epoch
     times_train = list()
     times_val = list()
 
-    for epoch in range(0, args.num_epochs):
+    for epoch in range(start_epoch, args.num_epochs):
 
         tic = time.time()
 
@@ -410,7 +427,6 @@ def main():
         tic = toc
 
         # Test results
-        # test_loss = test(epoch)
         test_loss, best_acc = test(
             net, val_loader, criterion,
             args.batch_size, device, epoch,
