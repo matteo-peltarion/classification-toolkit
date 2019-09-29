@@ -71,6 +71,9 @@ def parse_args():
     parser.add_argument('--log-level', default='INFO',
                         choices=['DEBUG', 'INFO'], help='log-level to use')
 
+    parser.add_argument('--data-augmentation-level', default=0, type=int,
+                        help='Sets different options for DA.')
+
     parser.add_argument('--batch-size', default=4, type=int,
                         help='batch-size to use')
 
@@ -239,7 +242,7 @@ def test(net, val_loader, criterion,
     return test_loss/(batch_idx+1), best_acc
 
 
-def get_data_augmentation_transforms():
+def get_data_augmentation_transforms(level):
     """Returns the list of transforms to be applied to the training dataset
        only, for data augmentation.
     """
@@ -264,8 +267,9 @@ def get_data_augmentation_transforms():
     # transforms_list.append(transforms.RandomApply([crop_transform], p=0.5))
 
     # Horizontal/vertical flip with 0.5 chance
-    transforms_list.append(transforms.RandomHorizontalFlip(0.5))
-    transforms_list.append(transforms.RandomVerticalFlip(0.5))
+    if level >= 1:
+        transforms_list.append(transforms.RandomHorizontalFlip(0.5))
+        transforms_list.append(transforms.RandomVerticalFlip(0.5))
 
     transforms_list.append(transforms.ToTensor())
     # transforms_list.append(transforms.Normalize(
@@ -323,7 +327,8 @@ def main():
     # TODO add transforms for data augmentation for train_set HHH
     train_set = HAM10000(
         args.data_dir, train_ids,
-        transforms=get_data_augmentation_transforms())
+        transforms=get_data_augmentation_transforms(
+            args.data_augmentation_level))
 
     val_set = HAM10000(args.data_dir, val_ids)
 
