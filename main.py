@@ -28,6 +28,8 @@ from torch.utils.data.dataloader import DataLoader
 
 from torch.utils.data import WeightedRandomSampler
 
+from torch.utils.tensorboard import SummaryWriter
+
 import torch
 # import torch.backends.cudnn as cudnn
 
@@ -79,7 +81,7 @@ def parse_args():
 
 # Training.
 def train(net, train_loader, criterion, optimizer,
-          batch_size, device, epoch, logger):
+          batch_size, device, epoch, logger, writer):
     """Performs training for one epoch
     """
 
@@ -123,7 +125,7 @@ def train(net, train_loader, criterion, optimizer,
 
 
 def test(net, val_loader, criterion,
-         batch_size, device, epoch, logger, exp_dir, best_acc):
+         batch_size, device, epoch, logger, writer, exp_dir, best_acc):
 
     net.eval()
     test_loss = 0
@@ -201,6 +203,10 @@ def main():
     exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
 
     os.makedirs(exp_dir, exist_ok=True)
+
+    # Writer will output to ./runs/ directory by default
+    # writer = SummaryWriter(os.path.join(exp_dir, "tb_log"))
+    writer = SummaryWriter()
 
     # Logging
     logger = logging.getLogger(__name__)
@@ -299,7 +305,7 @@ def main():
         # Train for one epoch
         train_loss = train(
             net, train_loader, criterion, optimizer,
-            args.batch_size, device, epoch, logger)
+            args.batch_size, device, epoch, logger, writer)
 
         toc = time.time()
 
@@ -318,7 +324,7 @@ def main():
         test_loss, best_acc = test(
             net, val_loader, criterion,
             args.batch_size, device, epoch,
-            logger, exp_dir, best_acc)
+            logger, writer, exp_dir, best_acc)
 
         toc = time.time()
 
@@ -331,9 +337,18 @@ def main():
 
         epochs.append(epoch)
 
+        # Add scalars to tb
+        writer.add_scalars(
+            'loss', {
+                'train': train_loss,
+                'val': test_loss},
+            epoch)
+
         create_loss_plot(exp_dir, epochs, train_losses, test_losses)
 
         np.save(npy_file, [train_losses, test_losses])
+
+    writer.close()
 
 
 if __name__ == '__main__':

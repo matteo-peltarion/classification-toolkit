@@ -114,3 +114,6 @@ data/
 
 # Experiments folder
 experiments/
+
+# Tensorboard logs folder
+runs/
