@@ -3,6 +3,8 @@
 
 import os
 
+import time
+
 import logging
 
 import argparse
@@ -11,22 +13,23 @@ import matplotlib
 
 matplotlib.use('agg')
 
+import numpy as np
+
+# Torch stuff
 import torch.optim as optim
 import torch.nn as nn
-
-import numpy as np
 
 # from torch.utils.data.sampler import RandomSampler
 from torch.utils.data.dataloader import DataLoader
 
 from torch.utils.data import WeightedRandomSampler
 
+import torch
 # import torch.backends.cudnn as cudnn
 
 from networks.SimpleCNN import SimpleCNN
 
-import torch
-
+# Experiment specific imports
 from lib.dataset import create_train_val_split, HAM10000
 
 from lib.utils import setup_logging, save_checkpoint, create_loss_plot
@@ -201,11 +204,16 @@ def main():
     weights = train_set.make_weights_for_balanced_classes()
 
     # train_sampler = RandomSampler(train_set)
-    train_sampler = WeightedRandomSampler(weights, len(weights))
+
+    # N_samples_per_epoch = len(weights)
+    # This one is sort of eyballed based on a few assumptions
+    # TODO explain
+    N_samples_per_epoch = 280 * 7
+    train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
 
     num_classes = train_set.get_num_classes()
 
-    # TODO set num_workers from args
+    # Use custom sampler for train_loader
     train_loader = DataLoader(train_set,
                               batch_size=args.batch_size,
                               sampler=train_sampler,
@@ -243,13 +251,30 @@ def main():
     # Init best acc
     best_acc = 0  # best test accuracy
 
+    # Keep an eye on how long it takes to train for one epoch
+    times_train = list()
+    times_val = list()
+
     for epoch in range(0, args.num_epochs):
 
-        # Train for one epoch
-        # TODO fix this
-        # train_loss = train(epoch)
+        tic = time.time()
 
-        # train_losses.append(train_loss)
+        # Train for one epoch
+        train_loss = train(
+            net, train_loader, criterion, optimizer,
+            args.batch_size, device, epoch, logger)
+
+        toc = time.time()
+
+        dt_train = toc - tic
+        times_train.append(dt_train)
+        train_losses.append(train_loss)
+
+        logger.info("Training for epoch {} took {} s.".format(
+            epoch, dt_train))
+
+        # Reset tic for test
+        tic = toc
 
         # Test results
         # test_loss = test(epoch)
@@ -258,7 +283,14 @@ def main():
             args.batch_size, device, epoch,
             logger, exp_dir, best_acc)
 
+        toc = time.time()
+
+        dt_val = toc - tic
         test_losses.append(test_loss)
+        times_val.append(dt_val)
+
+        logger.info("Validation for epoch {} took {} s.".format(
+            epoch, dt_val))
 
         epochs.append(epoch)
 
