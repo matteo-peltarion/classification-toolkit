@@ -87,7 +87,9 @@ def train(net, train_loader, criterion, optimizer,
     correct = 0
     total = 0
 
-    n_batches = len(train_loader.dataset) // batch_size
+    # Needs to be changed because of the DL sampler
+    # n_batches = len(train_loader.dataset) // batch_size
+    n_batches = len(train_loader)
 
     for batch_idx, (inputs, targets) in enumerate(train_loader):
         inputs, targets = inputs.to(device), targets.to(device)
