@@ -17,7 +17,8 @@ NUM_EPOCHS=20
 # Different levels for data augmentation
 # 0: no DA
 # 1: horizontal/vertical flips
-# 2:
+# 2: random crops
+# 3: color jitters
 DATA_AUGMENTATION_LEVEL=2
 
 # Either "--weighted-loss" or an empty string

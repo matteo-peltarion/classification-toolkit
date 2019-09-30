@@ -15,6 +15,8 @@ from tqdm import tqdm
 
 import matplotlib
 
+import PIL
+
 matplotlib.use('agg')
 
 from sklearn.metrics import confusion_matrix
@@ -295,10 +297,28 @@ def get_data_augmentation_transforms(level, normalize_input=False):
 
     transforms_list = list()
 
+    # Slightly change colors
+    if level >= 3:
+        colorjitter_transform = transforms.ColorJitter(
+            brightness=0.2,
+            contrast=0.2,
+            saturation=0.2)
+        transforms_list.append(transforms.RandomApply(
+            [colorjitter_transform], 0.5))
+
+    # Horizontal/vertical flip with 0.5 chance
+    if level >= 4:
+        rotation_transform = transforms.RandomRotation(
+            20, resample=PIL.Image.BILINEAR)
+        transforms_list.append(
+            transforms.RandomApply([rotation_transform], p=0.5))
+
     # A random resized crop
-    # crop_transform = transforms.RandomResizedCrop(
-        # (450, 600), scale=(0.8, 1.0), ratio=(1, 1))
-    # transforms_list.append(transforms.RandomApply([crop_transform], p=0.5))
+    if level >= 2:
+        crop_transform = transforms.RandomResizedCrop(
+            (450, 600), scale=(0.8, 1.0), ratio=(1, 1))
+        transforms_list.append(
+            transforms.RandomApply([crop_transform], p=0.5))
 
     # Horizontal/vertical flip with 0.5 chance
     if level >= 1:
