@@ -91,6 +91,14 @@ def parse_args():
     parser.add_argument('--num-epochs', default=10, type=int,
                         help='Number of training epochs')
 
+    parser.add_argument('--weighted-loss',
+                        action='store_true',
+                        help='Use a weighted version of the loss.')
+
+    parser.add_argument('--optimizer', default='Adam',
+                        choices=['Adam', 'SGD'],
+                        help='Optimizer.')
+
     parser.add_argument('--resume', '-r',
                         action='store_true', help='resume from checkpoint')
 
@@ -205,14 +213,6 @@ def test(net, val_loader, criterion,
             all_predicted = np.hstack(
                 (all_predicted, predicted.cpu().numpy().astype(int)))
 
-            # if (batch_idx + 1) % print_every == 0:
-                # logger.info(constants.STATUS_MSG.format(batch_idx+1,
-                            # n_batches,
-                            # test_loss/(batch_idx+1),
-                            # 100.*correct/total))
-
-    # acc2 = 100*(all_predicted == all_targets).sum()/total
-
     # Display confusion matrix
     cm = confusion_matrix(all_targets, all_predicted)
 
@@ -231,8 +231,6 @@ def test(net, val_loader, criterion,
     # Display accuracy
     logger.info("Accuracy on validation set after epoch {}: {}".format(
         epoch+1, acc))
-    # logger.info("Accuracy on validation set after epoch {}: {}".format(
-        # epoch, acc2))
 
     if acc > best_acc:
         logger.info('Saving..')
@@ -404,11 +402,22 @@ def main():
         # cudnn.benchmark = True
 
     # Define the loss
-    criterion = nn.CrossEntropyLoss()
+    if args.weighted_loss:
+        loss_weights = torch.Tensor(list(constants.CLASSES_WEIGHTS.values()))
+        loss_weights = loss_weights.to(device)
+        criterion = nn.CrossEntropyLoss(weight=loss_weights)
+    else:
+        criterion = nn.CrossEntropyLoss()
 
     # Optimizer
-    # optimizer = optim.Adam(net.parameters(), lr=lr)
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
+    optimizer = None
+    if args.optimizer == 'Adam':
+        optimizer = optim.Adam(net.parameters(), lr=args.lr)
+    elif args.optimizer == 'SGD':
+        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
+
+    # Check
+    assert(optimizer is not None)
 
     # TODO Move in argument parser!
     milestones = [10, 25, 50]
