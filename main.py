@@ -42,7 +42,8 @@ from networks.SimpleCNN import SimpleCNN
 
 from torchvision.models.vgg import vgg16
 from torchvision.models.alexnet import alexnet
-from torchvision.models.resnet import resnet50, resnet34
+from torchvision.models.resnet import (
+    resnet50, resnet34, resnet101, resnet152)
 
 import torchvision.transforms as transforms
 
@@ -86,14 +87,21 @@ def parse_args():
     parser.add_argument('--lr', default=1e-3, type=float,
                         help='Learning rate')
 
+    parser.add_argument('--scheduler-gamma', default=0.1, type=float,
+                        help='Gamma parameter for learning rate scheduler.')
+
     parser.add_argument('--milestones', nargs='+', type=int,
                         help='Milestones for lr scheduler')
 
     parser.add_argument('--network', default='SimpleCNN',
                         choices=[
-                            'SimpleCNN', 'VGG16', 'Alexnet', 'resnet34',
-                            'resnet50'],
+                            'SimpleCNN', 'VGG16', 'Alexnet',
+                            'resnet34', 'resnet50', 'resnet101', 'resnet152'],
                         help='network architecture')
+
+    parser.add_argument('--use-pretrained',
+                        action='store_true',
+                        help='Use a pretrained model.')  # noqa
 
     parser.add_argument('--num-epochs', default=10, type=int,
                         help='Number of training epochs')
@@ -168,14 +176,6 @@ def train(net, train_loader, criterion, optimizer,
 
         if (batch_idx + 1) % print_every == 0:
 
-            # print("outputs")
-            # print(outputs)
-            # print("targets")
-            # print(targets)
-            # for p,n in zip(net.parameters(),net._all_weights[0]):
-                # if n[:6] == 'weight':
-                    # print('===========\ngradient:{}\n----------\n{}'.format(n,p.grad))
-
             # Compute accuracy
             acc = 100.*correct/total
 
@@ -184,12 +184,6 @@ def train(net, train_loader, criterion, optimizer,
                 n_batches,
                 train_loss/(batch_idx+1),
                 acc))
-
-    # Print gradients
-    # for p in net.parameters():
-        # print(p)
-        # print(p.size())
-        # print(p.grad)
 
     # Add accuracy on validation set to tb
     writer.add_scalar("accuracy/train", acc, epoch)
@@ -236,12 +230,6 @@ def test(net, val_loader, criterion,
     # Get detailed stats per class
     stats_per_class = produce_per_class_stats(
         all_targets, all_predicted, val_loader.dataset.class_map_dict)
-
-    # for k in val_loader.dataset.class_map_dict:
-        # print("Class {}".format(k))
-        # print("Precision: {}".format(stats_per_class[k]['precision_score']))
-        # print("Recall: {}".format(stats_per_class[k]['recall_score']))
-        # print("Roc AUC: {}".format(stats_per_class[k]['roc_auc_score']))
 
     # Add scalars corresponding to these metrics to tensorboard
     for score in ['precision_score', 'recall_score', 'roc_auc_score']:
@@ -428,17 +416,43 @@ def main():  # noqa
     # Model.
     logger.info('==> Building model..')
 
+    # Set manually the shape of the last layer so that the same line works
+    # for pretrained networks as well.
+
+    if args.use_pretrained:
+        # Load checkpoint.
+        logger.info('==> Using pretrained model..')
+
     if args.network == 'SimpleCNN':
         net = SimpleCNN(num_classes=num_classes)
         # net = MyCNN(num_classes=num_classes)
     elif args.network == 'Alexnet':
-        net = alexnet(pretrained=False, num_classes=num_classes)
+        net = alexnet(pretrained=args.use_pretrained)
+        net.classifier[6] = nn.Linear(4096, num_classes)
+
     elif args.network == 'resnet34':
-        net = resnet34(num_classes=num_classes)
+        # net = resnet34(num_classes=num_classes)
+
+        net = resnet34(pretrained=args.use_pretrained)
+        net.fc = nn.Linear(512, num_classes)
+
     elif args.network == 'resnet50':
-        net = resnet50(num_classes=num_classes)
+        net = resnet50(pretrained=args.use_pretrained)
+        net.fc = nn.Linear(2048, num_classes)
+
+    elif args.network == 'resnet101':
+        net = resnet101(pretrained=args.use_pretrained)
+        net.fc = nn.Linear(2048, num_classes)
+
+    elif args.network == 'resnet152':
+        net = resnet152(pretrained=args.use_pretrained)
+        net.fc = nn.Linear(2048, num_classes)
     elif args.network == 'VGG16':
-        net = vgg16(num_classes=num_classes)
+        # net = vgg16(num_classes=num_classes)
+
+        net = vgg16(pretrained=args.use_pretrained)
+        # TODO check this
+        net.classifier[6] = nn.Linear(4096, num_classes)
 
     if args.resume:
         # Load checkpoint.
@@ -478,9 +492,6 @@ def main():  # noqa
     elif args.optimizer == 'SGD':
         optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
 
-    # Check
-    assert(optimizer is not None)
-
     if args.milestones is None:
         milestones = []
     else:
@@ -490,7 +501,8 @@ def main():  # noqa
     lr_scheduler = optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=milestones,
         last_epoch=start_epoch-1,
-        gamma=0.3162)  # sqrt(0.1)
+        gamma=args.scheduler_gamma)  # default: 0.1
+        # gamma=0.3162)  # sqrt(0.1)
 
     epochs, train_losses, test_losses = [], [], []
 
