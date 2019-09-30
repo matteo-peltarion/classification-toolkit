@@ -91,6 +91,10 @@ def parse_args():
     parser.add_argument('--num-epochs', default=10, type=int,
                         help='Number of training epochs')
 
+    parser.add_argument('--normalize-input',
+                        action='store_true',
+                        help='Normalize input using mean and variance computed on training set')  # noqa
+
     parser.add_argument('--weighted-loss',
                         action='store_true',
                         help='Use a weighted version of the loss.')
@@ -242,7 +246,7 @@ def test(net, val_loader, criterion,
     return test_loss/(batch_idx+1), best_acc
 
 
-def get_data_augmentation_transforms(level):
+def get_data_augmentation_transforms(level, normalize_input=False):
     """Returns the list of transforms to be applied to the training dataset
        only, for data augmentation.
     """
@@ -272,10 +276,12 @@ def get_data_augmentation_transforms(level):
         transforms_list.append(transforms.RandomVerticalFlip(0.5))
 
     transforms_list.append(transforms.ToTensor())
-    # transforms_list.append(transforms.Normalize(
-        # (0.5, 0.5, 0.5), (0.5, 0.5, 0.5)))
 
     # Add normalization?
+    if normalize_input:
+        transforms_list.append(transforms.Normalize(
+            constants.NORMALIZATION_MEAN,
+            constants.NORMALIZATION_STD))
 
     return transforms.Compose(transforms_list)
 
@@ -330,13 +336,16 @@ def main():
                                                 args.val_fraction)
 
     # Load datasets
-    # TODO add transforms for data augmentation for train_set HHH
+    train_transforms = get_data_augmentation_transforms(
+        args.data_augmentation_level, args.normalize_input)
     train_set = HAM10000(
-        args.data_dir, train_ids,
-        transforms=get_data_augmentation_transforms(
-            args.data_augmentation_level))
+        args.data_dir, train_ids, transforms=train_transforms)
 
-    val_set = HAM10000(args.data_dir, val_ids)
+    # For validation have data augmentation level set to 0 (NO DA)
+    val_transforms = get_data_augmentation_transforms(
+        0, args.normalize_input)
+    val_set = HAM10000(
+        args.data_dir, val_ids, transforms=val_transforms)
 
     weights = train_set.make_weights_for_balanced_classes()
 

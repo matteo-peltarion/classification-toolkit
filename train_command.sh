@@ -24,7 +24,12 @@ DATA_AUGMENTATION_LEVEL=2
 WEIGHTED_LOSS="--weighted-loss"
 #WEIGHTED_LOSS=""
 
-EXP_NAME="${NETWORK}_${OPTIMIZER}_${LR}_DA${DATA_AUGMENTATION_LEVEL}${WEIGHTED_LOSS}"
+# Either "--weighted-loss" or an empty string
+NORMALIZE_INPUT="--normalize-input"
+#NORMALIZE_INPUT=""
+
+EXP_NAME="${NETWORK}_${OPTIMIZER}_${LR}_DA${DATA_AUGMENTATION_LEVEL}"
+EXP_NAME="${EXP_NAME}${NORMALIZE_INPUT}${WEIGHTED_LOSS}"
 
 # Just launch training with one single command
 python main.py \
@@ -36,4 +41,5 @@ python main.py \
     --data-augmentation-level $DATA_AUGMENTATION_LEVEL \
     --exp-name $EXP_NAME \
     $WEIGHTED_LOSS \
+    $NORMALIZE_INPUT \
 
