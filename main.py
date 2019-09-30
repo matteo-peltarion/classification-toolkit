@@ -5,6 +5,8 @@ import os
 
 import time
 
+import datetime
+
 import logging
 
 import argparse
@@ -34,7 +36,7 @@ import torch
 # import torch.backends.cudnn as cudnn
 
 # Network options
-from networks.SimpleCNN import SimpleCNN, MyCNN
+from networks.SimpleCNN import SimpleCNN
 
 from torchvision.models.vgg import vgg16
 from torchvision.models.alexnet import alexnet
@@ -299,6 +301,12 @@ def main():
 
     setup_logging(log_path=log_file, log_level=args.log_level, logger=logger)
 
+    # Keep track of how much the whole experiment lasts
+    experiment_start = time.time()
+
+    logger.info("Experiment started at {}".format(
+        datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
+
     # Globals. NOPE
 
     # device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -375,7 +383,9 @@ def main():
     if args.resume:
         # Load checkpoint.
         logger.info('==> Resuming from checkpoint..')
-        # assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+        # assert (
+            # os.path.isdir('checkpoint'),
+            # 'Error: no checkpoint directory found!')
         checkpoint = torch.load(
             os.path.join(exp_dir, "model_latest.pth.tar"))
         net.load_state_dict(checkpoint['net'])
@@ -402,6 +412,7 @@ def main():
 
     # TODO Move in argument parser!
     milestones = [10, 25, 50]
+    milestones = []
 
     lr_scheduler = optim.lr_scheduler.MultiStepLR(
         optimizer, milestones=milestones, gamma=0.1)
@@ -412,6 +423,7 @@ def main():
     times_train = list()
     times_val = list()
 
+    # Training loop
     for epoch in range(start_epoch, args.num_epochs):
 
         tic = time.time()
@@ -454,6 +466,25 @@ def main():
 
         epochs.append(epoch)
 
+        # Estimate how long each epoch takes
+        estimated_seconds_per_epoch = (toc - experiment_start)/(epoch+1)
+
+        logger.info("Elapsed time after epoch {}: {} ({} per epoch)".format(
+            epoch+1,
+            datetime.timedelta(
+                seconds=int(toc - experiment_start)),
+            datetime.timedelta(
+                seconds=int(estimated_seconds_per_epoch)),
+        ))
+
+        # Estimate ETA
+        eta = (datetime.datetime.now() +
+               datetime.timedelta(
+                   seconds=(args.num_epochs - epoch - 1) *
+                   estimated_seconds_per_epoch))
+
+        logger.info("ETA: {}".format(eta.strftime("%d/%m/%Y, %H:%M:%S")))
+
         # Add scalars to tb
         writer.add_scalars(
             'loss', {
@@ -466,6 +497,15 @@ def main():
         np.save(npy_file, [train_losses, test_losses])
 
         lr_scheduler.step()
+
+    # Keep track of how much the whole experiment lasts
+    experiment_end = time.time()
+
+    logger.info("Experiment ended at {}".format(
+        datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
+
+    logger.info("Elapsed time: {}".format(
+        datetime.timedelta(seconds=int(experiment_end - experiment_start))))
 
     writer.close()
 
