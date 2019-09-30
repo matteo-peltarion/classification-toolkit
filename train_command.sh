@@ -12,7 +12,7 @@ LR=0.001
 
 BATCH_SIZE=8
 
-NUM_EPOCHS=80
+NUM_EPOCHS=20
 
 # Different levels for data augmentation
 # 0: no DA

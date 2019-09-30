@@ -1,22 +1,48 @@
 #!/bin/bash
 
-# Set LR here
-LR=0.01
+# The network to use
+NETWORK=resnet34
 
-#for LR in 0.01 0.005 0.001 0.0005 0.0001 0.00005 0.00001; do
-    #echo $LR
-#done
+# Optimizer
+OPTIMIZER=Adam
+#OPTIMIZER=SGD
 
-#exit 1
+# The learning rate
+LR=0.001
 
-#for LR in 0.01 0.005 0.001 0.0005 0.0001 0.00005 0.00001; do
-#for LR in 0.01; do
-for LR in 0.005 0.001 0.0005 0.0001 0.00005 0.00001; do
+BATCH_SIZE=8
+
+NUM_EPOCHS=30
+
+# Different levels for data augmentation
+# 0: no DA
+# 1: horizontal/vertical flips
+# 2:
+DATA_AUGMENTATION_LEVEL=2
+
+# Either "--weighted-loss" or an empty string
+WEIGHTED_LOSS="--weighted-loss"
+#WEIGHTED_LOSS=""
+
+# Either "--weighted-loss" or an empty string
+NORMALIZE_INPUT="--normalize-input"
+#NORMALIZE_INPUT=""
+
+for LR in 0.01 0.005 0.001 0.0005 0.0001 0.00005 0.00001; do
+
+    EXP_NAME="${NETWORK}_${OPTIMIZER}_${LR}_DA${DATA_AUGMENTATION_LEVEL}"
+    EXP_NAME="${EXP_NAME}${NORMALIZE_INPUT}${WEIGHTED_LOSS}"
+
     python main.py \
-        --num-epochs 100 \
-        --batch-size 8 \
+        --network $NETWORK \
+        --num-epochs $NUM_EPOCHS \
+        --batch-size $BATCH_SIZE \
         --lr $LR \
-        --network SimpleCNN \
-        --exp-name "SimpleCNN_LR_${LR}"
+        --optimizer $OPTIMIZER \
+        --data-augmentation-level $DATA_AUGMENTATION_LEVEL \
+        --exp-name $EXP_NAME \
+        $WEIGHTED_LOSS \
+        $NORMALIZE_INPUT \
+
 done
 

@@ -11,6 +11,8 @@ import matplotlib  # noqa
 import matplotlib.pyplot as plt
 import torch
 
+import sklearn.metrics as metrics
+
 LOG_FORMAT = '%(asctime)-15s %(levelname)-5s %(name)-15s - %(message)s'
 
 
@@ -109,3 +111,34 @@ def cm2df(cm, labels):
             {row_label: rowdata}, orient='index'))
 
     return df[labels]
+
+
+def produce_per_class_stats(targets, predicted, labels):
+    """
+    Given labels, produce stats for each class individually
+    """
+
+    stats_per_class = dict()
+
+    for i, row_label in enumerate(labels):
+
+        t_i = (targets == i)
+        p_i = (predicted == i)
+
+        accuracy_score = metrics.accuracy_score(t_i, p_i)
+        precision_score = metrics.precision_score(t_i, p_i)
+        recall_score = metrics.recall_score(t_i, p_i)
+        f1_score = metrics.f1_score(t_i, p_i)
+        roc_auc_score = metrics.roc_auc_score(t_i, p_i)
+
+        class_stats = {
+            'accuracy_score': accuracy_score,
+            'precision_score': precision_score,
+            'recall_score': recall_score,
+            'f1_score': f1_score,
+            'roc_auc_score': roc_auc_score,
+        }
+
+        stats_per_class[row_label] = class_stats
+
+    return stats_per_class

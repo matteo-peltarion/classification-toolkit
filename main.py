@@ -47,7 +47,9 @@ import torchvision.transforms as transforms
 # Experiment specific imports
 from lib.dataset import create_train_val_split, HAM10000
 
-from lib.utils import setup_logging, save_checkpoint, create_loss_plot, cm2df
+from lib.utils import (
+    setup_logging, save_checkpoint, create_loss_plot, cm2df,
+    produce_per_class_stats)
 
 # Collect constants in separate file, C headers style.
 import constants
@@ -169,11 +171,14 @@ def train(net, train_loader, criterion, optimizer,
                 # if n[:6] == 'weight':
                     # print('===========\ngradient:{}\n----------\n{}'.format(n,p.grad))
 
+            # Compute accuracy
+            acc = 100.*correct/total
+
             logger.info(constants.STATUS_MSG.format(
                 batch_idx+1,
                 n_batches,
                 train_loss/(batch_idx+1),
-                100.*correct/total))
+                acc))
 
     # Print gradients
     # for p in net.parameters():
@@ -181,7 +186,10 @@ def train(net, train_loader, criterion, optimizer,
         # print(p.size())
         # print(p.grad)
 
-    return train_loss/(batch_idx+1)
+    # Add accuracy on validation set to tb
+    writer.add_scalar("accuracy/train", acc, epoch)
+
+    return train_loss/(batch_idx+1), acc
 
 
 def test(net, val_loader, criterion,
@@ -220,6 +228,25 @@ def test(net, val_loader, criterion,
     # Display confusion matrix
     cm = confusion_matrix(all_targets, all_predicted)
 
+    # Get detailed stats per class
+    stats_per_class = produce_per_class_stats(
+        all_targets, all_predicted, val_loader.dataset.class_map_dict)
+
+    # for k in val_loader.dataset.class_map_dict:
+        # print("Class {}".format(k))
+        # print("Precision: {}".format(stats_per_class[k]['precision_score']))
+        # print("Recall: {}".format(stats_per_class[k]['recall_score']))
+        # print("Roc AUC: {}".format(stats_per_class[k]['roc_auc_score']))
+
+    # Add scalars corresponding to these metrics to tensorboard
+    for score in ['precision_score', 'recall_score', 'roc_auc_score']:
+        for k in val_loader.dataset.class_map_dict:
+            # Add scalars to tb
+            writer.add_scalar(
+                "{}_{}".format(k, score),
+                stats_per_class[k][score],
+                epoch)
+
     cm_pretty = cm2df(cm, val_loader.dataset.class_map_dict)
 
     print(cm_pretty)
@@ -232,6 +259,9 @@ def test(net, val_loader, criterion,
         'epoch': epoch,
     }
 
+    # Add accuracy on validation set to tb
+    writer.add_scalar("accuracy/val", acc, epoch)
+
     # Display accuracy
     logger.info("Accuracy on validation set after epoch {}: {}".format(
         epoch+1, acc))
@@ -243,7 +273,7 @@ def test(net, val_loader, criterion,
     else:
         save_checkpoint(state, exp_dir, backup_as_best=False)
 
-    return test_loss/(batch_idx+1), best_acc
+    return test_loss/(batch_idx+1), acc, best_acc
 
 
 def get_data_augmentation_transforms(level, normalize_input=False):
@@ -286,7 +316,7 @@ def get_data_augmentation_transforms(level, normalize_input=False):
     return transforms.Compose(transforms_list)
 
 
-def main():
+def main():  # noqa
 
     args = parse_args()
 
@@ -451,7 +481,7 @@ def main():
             logger.info('Learning rate: {}'.format(param_group['lr']))
 
         # Train for one epoch
-        train_loss = train(
+        train_loss, train_acc = train(
             net, train_loader, criterion, optimizer,
             args.batch_size, device, epoch, logger, writer)
 
@@ -468,7 +498,7 @@ def main():
         tic = toc
 
         # Test results
-        test_loss, best_acc = test(
+        test_loss, test_acc, best_acc = test(
             net, val_loader, criterion,
             args.batch_size, device, epoch,
             logger, writer, exp_dir, best_acc)
@@ -504,10 +534,18 @@ def main():
         logger.info("ETA: {}".format(eta.strftime("%d/%m/%Y, %H:%M:%S")))
 
         # Add scalars to tb
+        # Loss
         writer.add_scalars(
-            'loss', {
+            'Loss', {
                 'train': train_loss,
                 'val': test_loss},
+            epoch)
+
+        # Accuracy
+        writer.add_scalars(
+            'Accuracy', {
+                'train': train_acc,
+                'val': test_acc},
             epoch)
 
         create_loss_plot(exp_dir, epochs, train_losses, test_losses)
