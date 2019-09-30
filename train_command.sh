@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # A custom tag for the experiment
-EXP_TAG="_"
+EXP_TAG="run2_"
 
 # The network to use
 #NETWORK=Alexnet
@@ -21,7 +21,7 @@ BATCH_SIZE=8 # ok for resnet50
 
 #BATCH_SIZE=6 # ok for resnet152
 
-NUM_EPOCHS=150
+NUM_EPOCHS=300
 
 # Different levels for data augmentation
 # 0: no DA
@@ -49,7 +49,7 @@ fi
 # Epochs after which to change (decrease) lr
 # Either they're both set or both empty strings
 MILESTONES_OPTION="--milestones"
-MILESTONES="25 50 100"
+MILESTONES="25 50 100 200"
 #MILESTONES_OPTION=""
 #MILESTONES=""
 
