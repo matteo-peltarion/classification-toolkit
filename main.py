@@ -450,7 +450,7 @@ def main():  # noqa
             os.path.join(exp_dir, "model_latest.pth.tar"))
         net.load_state_dict(checkpoint['net'])
         best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch']
+        start_epoch = checkpoint['epoch'] + 1
     else:
         best_acc = 0
         start_epoch = 0
@@ -488,7 +488,9 @@ def main():  # noqa
 
     # Set lr scheduler
     lr_scheduler = optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=milestones, gamma=0.3162)  # sqrt(0.1)
+        optimizer, milestones=milestones,
+        last_epoch=start_epoch-1,
+        gamma=0.3162)  # sqrt(0.1)
 
     epochs, train_losses, test_losses = [], [], []
 
