@@ -33,6 +33,7 @@ def create_loss_plot(exp_dir, epochs, train_losses, test_losses):
     plt.plot(epochs, test_losses, 'r', marker='o', label='test loss')
     plt.legend()
     plt.savefig(join(exp_dir, 'loss.png'))
+    plt.close(f)
 
 
 def setup_logging(log_path=None, log_level='DEBUG',
@@ -76,12 +77,18 @@ def save_checkpoint(state, target_dir, file_name='checkpoint.pth.tar',
         file_name (str): the name of the checkpoint.
 
     """
-    best_model_path = os.path.join(target_dir, 'model_best.pth.tar')
     target_model_path = os.path.join(target_dir, file_name)
 
     os.makedirs(target_dir, exist_ok=True)
     torch.save(state, target_model_path)
+
+    latest_model_path = os.path.join(target_dir, "model_latest.pth.tar")
+
+    # Also copy as latest
+    shutil.copyfile(target_model_path, latest_model_path)
+
     if backup_as_best:
+        best_model_path = os.path.join(target_dir, 'model_best.pth.tar')
         shutil.copyfile(target_model_path, best_model_path)
 
 

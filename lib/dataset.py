@@ -173,10 +173,12 @@ class HAM10000(Dataset):
         image_paths_dict (dict): dict to map image IDs to image paths.
         meta_data (pandas.core.frame.DataFrame): meta data object.
         class_map_dict (dict): dict to map label strings to label indices.
+        transforms ():
 
     """
 
-    def __init__(self, data_dir, sampling_list):
+    def __init__(self, data_dir, sampling_list,
+                 transforms=transforms.ToTensor()):
         """Constructor.
 
         Args:
@@ -189,6 +191,9 @@ class HAM10000(Dataset):
         self.image_paths_dict = get_image_paths_dict(self.data_dir)
         self.meta_data = read_meta_data(self.data_dir)
         self.class_map_dict = self.get_class_map_dict()
+
+        self.transforms = transforms
+
 
     def get_labels(self):
         """Get labels of dataset and return them as list.
@@ -251,7 +256,8 @@ class HAM10000(Dataset):
         img = Image.open(self.image_paths_dict.get(image_id))
         assert(image_id in self.meta_data.index)
         label = self.class_map_dict[self.meta_data.loc[image_id]['dx']]
-        img = transforms.ToTensor()(img)
+
+        img = self.transforms(img)
 
         return img, label
 
