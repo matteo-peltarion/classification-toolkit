@@ -86,6 +86,9 @@ def parse_args():
     parser.add_argument('--lr', default=1e-3, type=float,
                         help='Learning rate')
 
+    parser.add_argument('--milestones', nargs='+', type=int,
+                        help='Milestones for lr scheduler')
+
     parser.add_argument('--network', default='SimpleCNN',
                         choices=[
                             'SimpleCNN', 'VGG16', 'Alexnet', 'resnet34',
@@ -478,12 +481,14 @@ def main():  # noqa
     # Check
     assert(optimizer is not None)
 
-    # TODO Move in argument parser!
-    milestones = [10, 25, 50]
-    milestones = []
+    if args.milestones is None:
+        milestones = []
+    else:
+        milestones = args.milestones
 
+    # Set lr scheduler
     lr_scheduler = optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=milestones, gamma=0.1)
+        optimizer, milestones=milestones, gamma=0.3162)  # sqrt(0.1)
 
     epochs, train_losses, test_losses = [], [], []
 
