@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # A custom tag for the experiment
-EXP_TAG="run4_"
+EXP_TAG="run5_"
 
 # The network to use
 #NETWORK=Alexnet
@@ -20,7 +20,7 @@ LR=0.01
 #BATCH_SIZE=8 # ok for resnet50
 BATCH_SIZE=6 # ok for resnet152
 
-NUM_EPOCHS=300
+NUM_EPOCHS=600
 
 # Different levels for data augmentation
 # 0: no DA
@@ -30,7 +30,7 @@ NUM_EPOCHS=300
 DATA_AUGMENTATION_LEVEL=3
 
 # Experiment specific weights
-#CLASSES_WEIGHTS['akiek'] = 10
+#CLASSES_WEIGHTS['akiec'] = 10
 #CLASSES_WEIGHTS['bcc'] = 3
 #CLASSES_WEIGHTS['bkl'] = 2
 #CLASSES_WEIGHTS['df'] = 2
@@ -41,8 +41,8 @@ DATA_AUGMENTATION_LEVEL=3
 # Weights for cross entropy loss
 # Either they're both set or both empty strings
 CLASS_WEIGHTS_OPTIONS="--class-weights"
-#CLASS_WEIGHTS="10 3 2 2 10 2 2"
-CLASS_WEIGHTS="5 3 2 2 5 2 2"
+#CLASS_WEIGHTS="5 3 2 2 5 2 2"
+CLASS_WEIGHTS="2.5 2.5 2.5 2.5 2 1 2"
 #CLASS_WEIGHTS_OPTIONS=""
 #CLASS_WEIGHTS=""
 
@@ -61,7 +61,7 @@ fi
 # Epochs after which to change (decrease) lr
 # Either they're both set or both empty strings
 MILESTONES_OPTION="--milestones"
-MILESTONES="25 50 100 150"
+MILESTONES="25 150 250 400"
 #MILESTONES_OPTION=""
 #MILESTONES=""
 

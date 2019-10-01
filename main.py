@@ -93,7 +93,7 @@ def parse_args():
     parser.add_argument('--scheduler-gamma', default=0.1, type=float,
                         help='Gamma parameter for learning rate scheduler.')
 
-    parser.add_argument('--class-weights', nargs='+', type=int,
+    parser.add_argument('--class-weights', nargs='+', type=float,
                         help='Weights for class (used for loss)')
 
     parser.add_argument('--milestones', nargs='+', type=int,
