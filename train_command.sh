@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # A custom tag for the experiment
-EXP_TAG="run2_"
+EXP_TAG="run3_"
 
 # The network to use
 #NETWORK=Alexnet
@@ -15,13 +15,13 @@ OPTIMIZER=Adam
 #OPTIMIZER=SGD
 
 # The starting learning rate
-LR=0.001
+LR=0.005
 
 BATCH_SIZE=8 # ok for resnet50
 
 #BATCH_SIZE=6 # ok for resnet152
 
-NUM_EPOCHS=300
+NUM_EPOCHS=200
 
 # Different levels for data augmentation
 # 0: no DA
@@ -30,11 +30,27 @@ NUM_EPOCHS=300
 # 3: color jitters
 DATA_AUGMENTATION_LEVEL=3
 
+# TODO remove this
 # Either "--weighted-loss" or an empty string
-WEIGHTED_LOSS_OPTION="--weighted-loss"
+#WEIGHTED_LOSS_OPTION="--weighted-loss"
 #WEIGHTED_LOSS_OPTION=""
 
-if [ -n "$WEIGHTED_LOSS_OPTION" ]; then
+#CLASSES_WEIGHTS['akiek'] = 10
+#CLASSES_WEIGHTS['bcc'] = 3
+#CLASSES_WEIGHTS['bkl'] = 2
+#CLASSES_WEIGHTS['df'] = 2
+#CLASSES_WEIGHTS['mel'] = 10
+#CLASSES_WEIGHTS['nv'] = 2
+#CLASSES_WEIGHTS['vasc'] = 2
+
+# Weights for cross entropy loss
+# Either they're both set or both empty strings
+CLASS_WEIGHTS_OPTIONS="--class-weights"
+CLASS_WEIGHTS="10 3 2 2 10 2 2"
+#CLASS_WEIGHTS_OPTIONS=""
+#CLASS_WEIGHTS=""
+
+if [ -n "$CLASS_WEIGHTS_OPTIONS" ]; then
     WEIGHTED_LOSS_TAG="_weighted_loss"
 fi
 
@@ -49,11 +65,11 @@ fi
 # Epochs after which to change (decrease) lr
 # Either they're both set or both empty strings
 MILESTONES_OPTION="--milestones"
-MILESTONES="25 50 100 200"
+MILESTONES="25 50 100 150"
 #MILESTONES_OPTION=""
 #MILESTONES=""
 
-PRETRAINED_OPTION="--use-pretrained"
+#PRETRAINED_OPTION="--use-pretrained"
 
 if [ -n "$PRETRAINED_OPTION" ]; then
     PRETRAINED_TAG="_pretrained"
@@ -76,4 +92,5 @@ python main.py \
     $NORMALIZE_INPUT_OPTION \
     $PRETRAINED_OPTION \
     $MILESTONES_OPTION $MILESTONES \
+    $CLASS_WEIGHTS_OPTIONS $CLASS_WEIGHTS \
 

@@ -1,24 +1,5 @@
-import collections
-
 # Template for message status
 STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
-
-# Classes weights for loss
-# akiec
-# bcc
-# bkl
-# df
-# mel
-# nv
-# vasc
-CLASSES_WEIGHTS = collections.OrderedDict()
-CLASSES_WEIGHTS['akiek'] = 10
-CLASSES_WEIGHTS['bcc'] = 3
-CLASSES_WEIGHTS['bkl'] = 2
-CLASSES_WEIGHTS['df'] = 2
-CLASSES_WEIGHTS['mel'] = 10
-CLASSES_WEIGHTS['nv'] = 2
-CLASSES_WEIGHTS['vasc'] = 2
 
 # Mean and std computed on training set
 # Mean: tensor([0.7633, 0.5459, 0.5704])

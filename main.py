@@ -90,6 +90,9 @@ def parse_args():
     parser.add_argument('--scheduler-gamma', default=0.1, type=float,
                         help='Gamma parameter for learning rate scheduler.')
 
+    parser.add_argument('--class-weights', nargs='+', type=int,
+                        help='Weights for class (used for loss)')
+
     parser.add_argument('--milestones', nargs='+', type=int,
                         help='Milestones for lr scheduler')
 
@@ -110,9 +113,9 @@ def parse_args():
                         action='store_true',
                         help='Normalize input using mean and variance computed on training set')  # noqa
 
-    parser.add_argument('--weighted-loss',
-                        action='store_true',
-                        help='Use a weighted version of the loss.')
+    # parser.add_argument('--weighted-loss',
+                        # action='store_true',
+                        # help='Use a weighted version of the loss.')
 
     parser.add_argument('--optimizer', default='Adam',
                         choices=['Adam', 'SGD'],
@@ -478,8 +481,11 @@ def main():  # noqa
         # cudnn.benchmark = True
 
     # Define the loss
-    if args.weighted_loss:
-        loss_weights = torch.Tensor(list(constants.CLASSES_WEIGHTS.values()))
+    if args.class_weights is not None:
+        assert (len(args.class_weights) == train_set.get_num_classes())
+        logger.info('==> Using class weights for loss:')
+        logger.info("==> {}".format(args.class_weights))
+        loss_weights = torch.Tensor(args.class_weights)
         loss_weights = loss_weights.to(device)
         criterion = nn.CrossEntropyLoss(weight=loss_weights)
     else:
