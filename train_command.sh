@@ -1,27 +1,26 @@
 #!/bin/bash
 
 # A custom tag for the experiment
-EXP_TAG="run3_"
+EXP_TAG="run4_"
 
 # The network to use
 #NETWORK=Alexnet
 #NETWORK=resnet34
-NETWORK=resnet50
+#NETWORK=resnet50
 #NETWORK=resnet101
-#NETWORK=resnet152
+NETWORK=resnet152
 
 # Optimizer
 OPTIMIZER=Adam
 #OPTIMIZER=SGD
 
 # The starting learning rate
-LR=0.005
+LR=0.01
 
-BATCH_SIZE=8 # ok for resnet50
+#BATCH_SIZE=8 # ok for resnet50
+BATCH_SIZE=6 # ok for resnet152
 
-#BATCH_SIZE=6 # ok for resnet152
-
-NUM_EPOCHS=200
+NUM_EPOCHS=300
 
 # Different levels for data augmentation
 # 0: no DA
@@ -30,11 +29,7 @@ NUM_EPOCHS=200
 # 3: color jitters
 DATA_AUGMENTATION_LEVEL=3
 
-# TODO remove this
-# Either "--weighted-loss" or an empty string
-#WEIGHTED_LOSS_OPTION="--weighted-loss"
-#WEIGHTED_LOSS_OPTION=""
-
+# Experiment specific weights
 #CLASSES_WEIGHTS['akiek'] = 10
 #CLASSES_WEIGHTS['bcc'] = 3
 #CLASSES_WEIGHTS['bkl'] = 2
@@ -69,10 +64,20 @@ MILESTONES="25 50 100 150"
 #MILESTONES_OPTION=""
 #MILESTONES=""
 
-#PRETRAINED_OPTION="--use-pretrained"
+PRETRAINED_OPTION="--use-pretrained"
 
 if [ -n "$PRETRAINED_OPTION" ]; then
     PRETRAINED_TAG="_pretrained"
+fi
+
+# Weight decay option
+WEIGHT_DECAY_OPTION="--weight-decay"
+WEIGHT_DECAY="0.00001"
+#WEIGHT_DECAY_OPTION=""
+#WEIGHT_DECAY=""
+
+if [ -n "$WEIGHT_DECAY_OPTION" ]; then
+    WEIGHT_DECAY_TAG="_WD${WEIGHT_DECAY}"
 fi
 
 # Build the name of the experiments from configuration
@@ -88,9 +93,9 @@ python main.py \
     --optimizer $OPTIMIZER \
     --data-augmentation-level $DATA_AUGMENTATION_LEVEL \
     --exp-name $EXP_NAME \
-    $WEIGHTED_LOSS_OPTION \
     $NORMALIZE_INPUT_OPTION \
     $PRETRAINED_OPTION \
     $MILESTONES_OPTION $MILESTONES \
+    $WEIGHT_DECAY_OPTION $WEIGHT_DECAY \
     $CLASS_WEIGHTS_OPTIONS $CLASS_WEIGHTS \
 

@@ -87,6 +87,9 @@ def parse_args():
     parser.add_argument('--lr', default=1e-3, type=float,
                         help='Learning rate')
 
+    parser.add_argument('--weight-decay', default=0.0, type=float,
+                        help='Weight decay parameter for optimizer.')
+
     parser.add_argument('--scheduler-gamma', default=0.1, type=float,
                         help='Gamma parameter for learning rate scheduler.')
 
@@ -112,10 +115,6 @@ def parse_args():
     parser.add_argument('--normalize-input',
                         action='store_true',
                         help='Normalize input using mean and variance computed on training set')  # noqa
-
-    # parser.add_argument('--weighted-loss',
-                        # action='store_true',
-                        # help='Use a weighted version of the loss.')
 
     parser.add_argument('--optimizer', default='Adam',
                         choices=['Adam', 'SGD'],
@@ -494,9 +493,13 @@ def main():  # noqa
     # Optimizer
     optimizer = None
     if args.optimizer == 'Adam':
-        optimizer = optim.Adam(net.parameters(), lr=args.lr)
+        optimizer = optim.Adam(
+            net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     elif args.optimizer == 'SGD':
-        optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9)
+        # TODO momentum might become a parameter?
+        optimizer = optim.SGD(
+            net.parameters(), lr=args.lr, momentum=0.9,
+            weight_decay=args.weight_decay)
 
     if args.milestones is None:
         milestones = []
