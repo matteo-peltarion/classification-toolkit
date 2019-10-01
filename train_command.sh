@@ -41,7 +41,8 @@ DATA_AUGMENTATION_LEVEL=3
 # Weights for cross entropy loss
 # Either they're both set or both empty strings
 CLASS_WEIGHTS_OPTIONS="--class-weights"
-CLASS_WEIGHTS="10 3 2 2 10 2 2"
+#CLASS_WEIGHTS="10 3 2 2 10 2 2"
+CLASS_WEIGHTS="5 3 2 2 5 2 2"
 #CLASS_WEIGHTS_OPTIONS=""
 #CLASS_WEIGHTS=""
 
