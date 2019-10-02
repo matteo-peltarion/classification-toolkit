@@ -272,8 +272,24 @@ def test(net, val_loader, criterion,
 
 
 def get_data_augmentation_transforms(level, normalize_input=False):
-    """Returns the list of transforms to be applied to the training dataset
-       only, for data augmentation.
+    """Returns the list of transforms to be applied to the a dataset,
+       for data augmentation.
+
+    Parameters
+    ----------
+
+    level : int
+        The level of data augmentation applied.
+        0: no data augmentation (just transform to tensor using
+        transforms.ToTensor())
+        1: horizontal/vertical flips, chance 0.5
+        2: random resized crops, chance 0.5
+        3: alter the color space of images, chance 0.5
+
+    normalize_input : bool, optional
+        Wether to normalize the input by subtracting mean and dividing by
+        standard deviation, so that values lie in the -1, 1 interval. The
+        default is `False`.
     """
 
     # Keep this as an example
