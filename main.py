@@ -150,6 +150,9 @@ def train(net, train_loader, criterion, optimizer,
     # n_batches = len(train_loader.dataset) // batch_size
     n_batches = len(train_loader)
 
+    all_targets = np.array([], dtype=int)
+    all_predicted = np.array([], dtype=int)
+
     for batch_idx, (inputs, targets) in enumerate(train_loader):
 
         # Send tensors to the appropriate device
@@ -186,6 +189,38 @@ def train(net, train_loader, criterion, optimizer,
                 n_batches,
                 train_loss/(batch_idx+1),
                 acc))
+
+        # TODO add this to parameter
+        if (epoch + 1) % 10 == 0:
+            # Save all for confusion matrix
+            all_targets = np.hstack(
+                (all_targets, targets.cpu().numpy().astype(int)))
+
+            all_predicted = np.hstack(
+                (all_predicted, predicted.cpu().numpy().astype(int)))
+
+    # TODO add this to parameter
+    if (epoch + 1) % 10 == 0:
+        # Display confusion matrix
+        cm = confusion_matrix(all_targets, all_predicted)
+
+        # Get detailed stats per class
+        stats_per_class = produce_per_class_stats(
+            all_targets, all_predicted, train_loader.dataset.class_map_dict)
+
+        # Add scalars corresponding to these metrics to tensorboard
+        for score in ['train_precision_score', 'train_recall_score',
+                      'train_roc_auc_score']:
+            for k in train_loader.dataset.class_map_dict:
+                # Add scalars to tb
+                writer.add_scalar(
+                    "{}_{}".format(k, score),
+                    stats_per_class[k][score],
+                    epoch)
+
+        cm_pretty = cm2df(cm, train_loader.dataset.class_map_dict)
+
+        print(cm_pretty)
 
     # Add accuracy on validation set to tb
     writer.add_scalar("accuracy/train", acc, epoch)
