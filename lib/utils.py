@@ -146,18 +146,37 @@ def produce_per_class_stats(targets, predicted, labels):
     return stats_per_class
 
 
-def plot_tf_log(csv_files, title, y_label=None,
+def plot_tf_log(csv_files, title,
                 set_names=['Training', 'Validation'],
-                index_col='Step', val_col='Value'):
-    """Produce plot from csv dumped from tensorboard
+                x_col='Step', y_col='Value'):
+    """Produce plot from csv dumped from tensorboard.
 
-    Args:
-        csv_files (list): a list of paths to csv files containing the values
-            that need to be plotted.
-        target_dir (str): Full path to the directory in which the checkpoint
+    Parameters
+    ----------
+        csv_files : list
+            a list of paths to csv files containing the values that need to
+            be plotted.
+
+        title : str
+            The title that will appear above the plot.
+
+        set_names : list, optional
+            The list of names for the sets, which will also be displayed in
+            the plot's legend. Default ["Training", "Validation"].
+
+        x_col : str, optional
+            The name of the column containing values for the x axis.
+            Default 'Step'.
+
+        y_col : str, optional
+            The name of the column containing values for the y axis.
+            Default 'Value'.
     """
 
     df_list = list()
+
+    # Sanity check
+    assert(len(csv_files) == len(set_names))
 
     for i, csv_f in enumerate(csv_files):
 
@@ -166,11 +185,13 @@ def plot_tf_log(csv_files, title, y_label=None,
 
         df_list.append(df)
 
+    # Produce a dataframe with data for all lines
     run_df = pd.concat(df_list)
 
     sns.set_style("whitegrid")
 
-    sns.lineplot(x="Step", y="Value", data=run_df, hue='Set',
+    # Plot the lines
+    sns.lineplot(x=x_col, y=y_col, data=run_df, hue='Set',
                  palette="deep").set_title(title)
 
     plt.show()

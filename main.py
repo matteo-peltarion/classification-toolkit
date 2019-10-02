@@ -290,6 +290,13 @@ def get_data_augmentation_transforms(level, normalize_input=False):
         Wether to normalize the input by subtracting mean and dividing by
         standard deviation, so that values lie in the -1, 1 interval. The
         default is `False`.
+
+    Returns
+    -------
+
+    transforms : torchvision.transforms
+        The transforms that are applied to each data point.
+
     """
 
     # Keep this as an example
