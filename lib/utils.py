@@ -7,6 +7,8 @@ import logging
 
 import pandas as pd
 
+import seaborn as sns
+
 import matplotlib  # noqa
 import matplotlib.pyplot as plt
 import torch
@@ -142,3 +144,38 @@ def produce_per_class_stats(targets, predicted, labels):
         stats_per_class[row_label] = class_stats
 
     return stats_per_class
+
+
+def plot_tf_log(csv_files, title, y_label=None,
+                set_names=['Training', 'Validation'],
+                index_col='Step', val_col='Value'):
+    """Produce plot from csv dumped from tensorboard
+
+    Args:
+        csv_files (list): a list of paths to csv files containing the values
+            that need to be plotted.
+        target_dir (str): Full path to the directory in which the checkpoint
+    """
+
+    df_list = list()
+
+    for i, csv_f in enumerate(csv_files):
+
+        df = pd.read_csv(csv_f)
+        df['Set'] = set_names[i]
+
+        df_list.append(df)
+
+    run_df = pd.concat(df_list)
+
+    sns.set_style("whitegrid")
+
+    sns.lineplot(x="Step", y="Value", data=run_df, hue='Set',
+                 palette="deep").set_title(title)
+
+    plt.show()
+
+
+# if __name__ == "__main__":
+    # plot_tf_log(["run6_train.csv", "run6_val.csv"],
+                # "Accuracy (higher is better)")
