@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # A custom tag for the experiment
-EXP_TAG="run5_"
+EXP_TAG="run6_"
 
 # The network to use
 #NETWORK=Alexnet
@@ -61,7 +61,7 @@ fi
 # Epochs after which to change (decrease) lr
 # Either they're both set or both empty strings
 MILESTONES_OPTION="--milestones"
-MILESTONES="25 150 250 400"
+MILESTONES="25 250 400"
 #MILESTONES_OPTION=""
 #MILESTONES=""
 
