@@ -653,7 +653,7 @@ def main():  # noqa
                    seconds=(args.num_epochs - epoch - 1) *
                    estimated_seconds_per_epoch))
 
-        logger.info("ETA: {}".format(eta.strftime("%d/%m/%Y, %H:%M:%S")))
+        logger.info("ETA: {}".format(eta.strftime("%d/%m/%Y %H:%M:%S")))
 
         # Add scalars to tb
         # Loss
