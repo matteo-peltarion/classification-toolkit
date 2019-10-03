@@ -598,6 +598,9 @@ def main():  # noqa
 
         tic = time.time()
 
+        # Print the experiment name at the beginning of every loop
+        logger.info("Experiment name: {}".format(args.exp_name))
+
         # Print learning rate
         for param_group in optimizer.param_groups:
             logger.info('Learning rate: {}'.format(param_group['lr']))
