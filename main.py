@@ -19,7 +19,7 @@ import PIL
 
 matplotlib.use('agg')
 
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, balanced_accuracy_score
 
 import numpy as np
 
@@ -220,6 +220,11 @@ def train(net, train_loader, criterion, optimizer,
 
         cm_pretty = cm2df(cm, train_loader.dataset.class_map_dict)
 
+        # Compute balanced accuracy
+        bal_acc = balanced_accuracy_score(all_targets, all_predicted)
+
+        writer.add_scalar("balanced_accuracy/train", bal_acc, epoch)
+
         print(cm_pretty)
 
     # Add accuracy on validation set to tb
@@ -291,6 +296,11 @@ def test(net, val_loader, criterion,
 
     # Add accuracy on validation set to tb
     writer.add_scalar("accuracy/val", acc, epoch)
+
+    # Compute balanced accuracy
+    bal_acc = balanced_accuracy_score(all_targets, all_predicted)
+
+    writer.add_scalar("balanced_accuracy/val", bal_acc, epoch)
 
     # Display accuracy
     logger.info("Accuracy on validation set after epoch {}: {}".format(
