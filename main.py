@@ -209,12 +209,12 @@ def train(net, train_loader, criterion, optimizer,
             all_targets, all_predicted, train_loader.dataset.class_map_dict)
 
         # Add scalars corresponding to these metrics to tensorboard
-        for score in ['train_precision_score', 'train_recall_score',
-                      'train_roc_auc_score']:
+        for score in ['precision_score', 'recall_score',
+                      'roc_auc_score']:
             for k in train_loader.dataset.class_map_dict:
                 # Add scalars to tb
                 writer.add_scalar(
-                    "{}_{}".format(k, score),
+                    "{}_{}_train".format(k, score),
                     stats_per_class[k][score],
                     epoch)
 
@@ -273,7 +273,7 @@ def test(net, val_loader, criterion,
         for k in val_loader.dataset.class_map_dict:
             # Add scalars to tb
             writer.add_scalar(
-                "{}_{}".format(k, score),
+                "{}_{}_val".format(k, score),
                 stats_per_class[k][score],
                 epoch)
 
