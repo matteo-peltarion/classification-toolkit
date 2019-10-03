@@ -130,7 +130,7 @@ def parse_args():
 
 # Training.
 def train(net, train_loader, criterion, optimizer,
-          batch_size, device, epoch, logger, writer):
+          batch_size, device, epoch, logger, writer, exp_dir):
     """Performs training for one epoch
     """
 
@@ -204,6 +204,9 @@ def train(net, train_loader, criterion, optimizer,
         # Display confusion matrix
         cm = confusion_matrix(all_targets, all_predicted)
 
+        # Save confusion matrix
+        np.save(os.path.join(exp_dir, "confusion_matrix_train_latest.npy"), cm)
+
         # Get detailed stats per class
         stats_per_class = produce_per_class_stats(
             all_targets, all_predicted, train_loader.dataset.class_map_dict)
@@ -268,6 +271,9 @@ def test(net, val_loader, criterion,
 
     # Display confusion matrix
     cm = confusion_matrix(all_targets, all_predicted)
+
+    # Save confusion matrix
+    np.save(os.path.join(exp_dir, "confusion_matrix_test_latest.npy"), cm)
 
     # Get detailed stats per class
     stats_per_class = produce_per_class_stats(
@@ -599,7 +605,7 @@ def main():  # noqa
         # Train for one epoch
         train_loss, train_acc = train(
             net, train_loader, criterion, optimizer,
-            args.batch_size, device, epoch, logger, writer)
+            args.batch_size, device, epoch, logger, writer, exp_dir)
 
         toc = time.time()
 
