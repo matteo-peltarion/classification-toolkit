@@ -238,6 +238,54 @@ def train(net, train_loader, criterion, optimizer,
 
 def test(net, val_loader, criterion,
          batch_size, device, epoch, logger, writer, exp_dir, best_acc):
+    """
+    Performs inference on the validation set
+
+    Parameters
+    ----------
+
+    net : nn.Module
+        The object representing the network.
+
+    val_loader : torch.utils.data.DataLoader
+        The dataloader for the validation set.
+
+    criterion : torch.nn.modules.loss._Loss
+        The object representing the loss function.
+
+    batch_size : int
+
+    device : str
+        Either 'cpu' or 'cuda', depending on the backend used for computation.
+
+    epoch : int
+        The number of the current epoch.
+
+    logger : logging.Logger
+
+    writer : torch.utils.tensorboard.SummaryWriter
+        The object used to write Tensorboard events.
+
+    exp_dir : str
+        The folder where experiment results (model and log) are saved.
+
+    best_acc : float
+        The best value for the accuracy so far obtained with the model.
+
+    Returns
+    -------
+
+    float
+        The loss computed on the validation set at current epoch.
+
+    float
+        The accuracy of the model on the validation set at current epoch.
+
+    float
+        The best value for the accuracy so far obtained with the model.
+
+    return test_loss/(batch_idx+1), acc, best_acc
+    """
 
     net.eval()
     test_loss = 0
