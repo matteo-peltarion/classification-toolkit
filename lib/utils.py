@@ -148,7 +148,7 @@ def produce_per_class_stats(targets, predicted, labels):
 
 def plot_tf_log(csv_files, title,
                 set_names=['Training', 'Validation'],
-                x_col='Step', y_col='Value'):
+                x_col='Step', y_col='Value', x_label="Epoch", y_label=None):
     """Produce plot from csv dumped from tensorboard.
 
     Parameters
@@ -171,6 +171,13 @@ def plot_tf_log(csv_files, title,
         y_col : str, optional
             The name of the column containing values for the y axis.
             Default 'Value'.
+
+        x_label : str, optional
+            The label of the for the x axis. Default 'Epoch'.
+
+        y_label : str, optional
+            The label of the for the y axis. If `None`, defaults to y_col.
+            Default `None`.
     """
 
     df_list = list()
@@ -193,5 +200,11 @@ def plot_tf_log(csv_files, title,
     # Plot the lines
     sns.lineplot(x=x_col, y=y_col, data=run_df, hue='Set',
                  palette="deep").set_title(title)
+
+    if y_label is None:
+        y_label = y_col
+
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
 
     plt.show()
