@@ -148,7 +148,8 @@ def produce_per_class_stats(targets, predicted, labels):
 
 def plot_tf_log(csv_files, title,
                 set_names=['Training', 'Validation'],
-                x_col='Step', y_col='Value', x_label="Epoch", y_label=None):
+                x_col='Step', y_col='Value', x_label="Epoch", y_label=None,
+                palette='deep'):
     """Produce plot from csv dumped from tensorboard.
 
     Parameters
@@ -178,6 +179,11 @@ def plot_tf_log(csv_files, title,
         y_label : str, optional
             The label of the for the y axis. If `None`, defaults to y_col.
             Default `None`.
+
+        palette :  palette name (str), list, or dict, optional
+            The color palette used for plotting.
+            See https://seaborn.pydata.org/generated/seaborn.lineplot.html for
+            more information. Default 'deep'.
     """
 
     df_list = list()
@@ -199,7 +205,7 @@ def plot_tf_log(csv_files, title,
 
     # Plot the lines
     sns.lineplot(x=x_col, y=y_col, data=run_df, hue='Set',
-                 palette="deep").set_title(title)
+                 palette=palette).set_title(title)
 
     if y_label is None:
         y_label = y_col
