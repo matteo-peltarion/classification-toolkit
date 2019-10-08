@@ -195,8 +195,3 @@ def plot_tf_log(csv_files, title,
                  palette="deep").set_title(title)
 
     plt.show()
-
-
-# if __name__ == "__main__":
-    # plot_tf_log(["run6_train.csv", "run6_val.csv"],
-                # "Accuracy (higher is better)")
