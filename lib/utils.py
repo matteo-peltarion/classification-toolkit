@@ -118,6 +118,25 @@ def cm2df(cm, labels):
 def produce_per_class_stats(targets, predicted, labels):
     """
     Given labels, produce stats for each class individually
+
+    Parameters
+    ----------
+
+    targets : numpy.ndarray
+        A monodimensional array containing ground truth labels for samples.
+
+    predicted : numpy.ndarray
+        A monodimensional array containing predicted labels for samples.
+
+    targets : list
+        A list of strings containing the names of the classes.
+
+    Returns
+    -------
+
+    dict
+        Keys are class names, values are dictionaries which contain the various
+        class stats.
     """
 
     stats_per_class = dict()
