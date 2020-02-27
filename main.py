@@ -1,4 +1,4 @@
-"""Train classifier on HAM10000 dataset.
+"""Train classifier on Husqvarna dataset.
 """
 
 import os
@@ -30,7 +30,7 @@ import torch.nn as nn
 # from torch.utils.data.sampler import RandomSampler
 from torch.utils.data.dataloader import DataLoader
 
-from torch.utils.data import WeightedRandomSampler
+from torch.utils.data import WeightedRandomSampler, RandomSampler
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -48,7 +48,7 @@ from torchvision.models.resnet import (
 import torchvision.transforms as transforms
 
 # Experiment specific imports
-from lib.dataset import create_train_val_split, HAM10000
+from lib.dataset.husqvarna import Husqvarna
 
 from lib.utils import (
     setup_logging, save_checkpoint, create_loss_plot, cm2df,
@@ -62,15 +62,20 @@ def parse_args():
 
     # Parse args.
     parser = argparse.ArgumentParser(
-        description='PyTorch classifier on HAM10000 dataset')
+        description='PyTorch classifier on Husqvarna dataset')
 
-    parser.add_argument('--data-dir', default='./data', help='path to data')
+    parser.add_argument('--data-dir', help='Path to data', required=True)
 
     parser.add_argument('--train_fraction', default=0.8, type=float,
                         help='fraction of dataset to use for training')
 
     parser.add_argument('--val_fraction', default=0.2, type=float,
                         help='fraction of dataset to use for validation')
+
+    parser.add_argument('--input-features', nargs='+', type=str,
+                        help='List of columns where inpute features are',
+                        metavar='FEATURE_NAME',
+                        required=True)
 
     parser.add_argument('--exp-name', default='baseline', type=str,
                         help='name of experiment')
@@ -496,34 +501,41 @@ def main():  # noqa
 
     # Initialize datasets and loaders.
     logger.info('==> Preparing data..')
-    train_ids, val_ids = create_train_val_split(args.data_dir,
-                                                args.train_fraction,
-                                                args.val_fraction)
+
+    # train_ids, val_ids = create_train_val_split(args.data_dir,
+                                                # args.train_fraction,
+                                                # args.val_fraction)
 
     # Load datasets
     train_transforms = get_data_augmentation_transforms(
         args.data_augmentation_level, args.normalize_input)
-    train_set = HAM10000(
-        args.data_dir, train_ids, transforms=train_transforms)
+
+    train_set = Husqvarna(
+        args.data_dir, 'train',
+        args.input_features, transforms=train_transforms)
 
     # For validation have data augmentation level set to 0 (NO DA)
     val_transforms = get_data_augmentation_transforms(
         0, args.normalize_input)
-    val_set = HAM10000(
-        args.data_dir, val_ids, transforms=val_transforms)
 
-    weights = train_set.make_weights_for_balanced_classes()
+    val_set = Husqvarna(
+        args.data_dir, 'test',
+        args.input_features, transforms=val_transforms)
+
+    # weights = train_set.make_weights_for_balanced_classes()
 
     # train_sampler = RandomSampler(train_set)
 
     # N_samples_per_epoch = len(weights)
     # This one is sort of eyeballed based on a few assumptions
     # TODO explain
-    N_samples_per_epoch = 50 * 7 * args.batch_size
+    # N_samples_per_epoch = 50 * 7 * args.batch_size
 
     # For finding appropriate lr
     # N_samples_per_epoch = 50 * 7
-    train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
+    # train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
+    train_sampler = RandomSampler(train_set)
+    val_sampler = RandomSampler(val_set)
 
     num_classes = train_set.get_num_classes()
 
@@ -535,6 +547,7 @@ def main():  # noqa
 
     val_loader = DataLoader(val_set,
                             batch_size=args.batch_size,
+                            sampler=val_sampler,
                             num_workers=8)
 
     # Model.
