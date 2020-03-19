@@ -48,7 +48,7 @@ from torchvision.models.resnet import (
 import torchvision.transforms as transforms
 
 # Experiment specific imports
-from lib.dataset.husqvarna import Husqvarna
+from lib.dataset.peltarion import Peltarion
 
 from lib.utils import (
     setup_logging, save_checkpoint, create_loss_plot, cm2df,
@@ -62,7 +62,7 @@ def parse_args():
 
     # Parse args.
     parser = argparse.ArgumentParser(
-        description='PyTorch classifier on Husqvarna dataset')
+        description='PyTorch classifier on custom dataset')
 
     parser.add_argument('--data-dir', help='Path to data', required=True)
 
@@ -184,11 +184,10 @@ def train(net, train_loader, criterion, optimizer,
 
         correct += predicted.eq(targets).sum().item()
 
+        # Compute accuracy
+        acc = 100.*correct/total
+
         if (batch_idx + 1) % print_every == 0:
-
-            # Compute accuracy
-            acc = 100.*correct/total
-
             logger.info(constants.STATUS_MSG.format(
                 batch_idx+1,
                 n_batches,
@@ -417,6 +416,9 @@ def get_data_augmentation_transforms(level, normalize_input=False):
 
     transforms_list = list()
 
+    # TODO to move, dataset specific
+    transforms_list.append(transforms.ToPILImage())
+
     # Slightly change colors
     if level >= 3:
         colorjitter_transform = transforms.ColorJitter(
@@ -435,14 +437,18 @@ def get_data_augmentation_transforms(level, normalize_input=False):
 
     # A random resized crop
     if level >= 2:
+        # crop_transform = transforms.RandomResizedCrop(
+            # (450, 600), scale=(0.8, 1.0), ratio=(1, 1))
         crop_transform = transforms.RandomResizedCrop(
-            (450, 600), scale=(0.8, 1.0), ratio=(1, 1))
+            (48, 48), scale=(0.8, 1.0), ratio=(1, 1))
+
         transforms_list.append(
             transforms.RandomApply([crop_transform], p=0.5))
 
     # Horizontal/vertical flip with 0.5 chance
     if level >= 1:
         transforms_list.append(transforms.RandomHorizontalFlip(0.5))
+    if level >= 1.5:
         transforms_list.append(transforms.RandomVerticalFlip(0.5))
 
     transforms_list.append(transforms.ToTensor())
@@ -510,31 +516,46 @@ def main():  # noqa
     train_transforms = get_data_augmentation_transforms(
         args.data_augmentation_level, args.normalize_input)
 
-    train_set = Husqvarna(
+    # TODO dataset specific, move somewhere else
+    class_map_dict = {
+        0: "Angry",
+        1: "Disgust",
+        2: "Fear",
+        3: "Happy",
+        4: "Sad",
+        5: "Surprise",
+        6: "Neutral"
+    }
+
+    # TODO dataset specific, move somewhere else
+    train_set = Peltarion(
         args.data_dir, 'train',
-        args.input_features, transforms=train_transforms)
+        args.input_features, target_column='emotion',
+        class_map_dict=class_map_dict,
+        transforms=train_transforms)
 
     # For validation have data augmentation level set to 0 (NO DA)
     val_transforms = get_data_augmentation_transforms(
         0, args.normalize_input)
 
-    val_set = Husqvarna(
+    val_set = Peltarion(
         args.data_dir, 'test',
-        args.input_features, transforms=val_transforms)
+        args.input_features, target_column='emotion',
+        class_map_dict=class_map_dict,
+        transforms=val_transforms)
 
-    # weights = train_set.make_weights_for_balanced_classes()
-
-    # train_sampler = RandomSampler(train_set)
+    weights = train_set.make_weights_for_balanced_classes()
 
     # N_samples_per_epoch = len(weights)
     # This one is sort of eyeballed based on a few assumptions
     # TODO explain
     # N_samples_per_epoch = 50 * 7 * args.batch_size
+    N_samples_per_epoch = 1000 * args.batch_size
 
     # For finding appropriate lr
     # N_samples_per_epoch = 50 * 7
-    # train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
-    train_sampler = RandomSampler(train_set)
+    train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
+    # train_sampler = RandomSampler(train_set)
     val_sampler = RandomSampler(val_set)
 
     num_classes = train_set.get_num_classes()
@@ -576,6 +597,9 @@ def main():  # noqa
     elif args.network == 'resnet50':
         net = resnet50(pretrained=args.use_pretrained)
         net.fc = nn.Linear(2048, num_classes)
+        # TODO network specific, move somewhere else
+        net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
 
     elif args.network == 'resnet101':
         net = resnet101(pretrained=args.use_pretrained)
