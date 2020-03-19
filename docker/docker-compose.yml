@@ -1,0 +1,17 @@
+version: '2.3'
+services:
+  interactive:
+    runtime: nvidia
+    image: pytorch-interactive
+    user: "${USER_ID}:${GROUP_ID}"
+    environment:
+        NVIDIA_VISIBLE_DEVICES: 4
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    #ports:
+      #- ${JUPYTER_PORT}:8888
+    volumes:
+    - ${DATA_FOLDER}:/data
+    # TODO fix this one below (should use ENV variable)
+    - ${TOOLKIT_FOLDER}:/workspace/toolkit
