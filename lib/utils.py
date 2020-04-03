@@ -15,7 +15,105 @@ import torch
 
 import sklearn.metrics as metrics
 
+import torchvision.transforms as transforms
+
+import PIL
+
 LOG_FORMAT = '%(asctime)-15s %(levelname)-5s %(name)-15s - %(message)s'
+
+
+def get_data_augmentation_transforms(level, input_normalization=None):
+    """Returns the list of transforms to be applied to the a dataset,
+       for data augmentation.
+
+    Parameters
+    ----------
+
+    level : int
+        The level of data augmentation applied.
+        0: no data augmentation (just transform to tensor using
+        transforms.ToTensor())
+        1: horizontal/vertical flips, chance 0.5
+        2: random resized crops, chance 0.5
+        3: alter the color space of images, chance 0.5
+
+    normalize_input : bool, optional
+        Wether to normalize the input by subtracting mean and dividing by
+        standard deviation, so that values lie in the -1, 1 interval. If not
+        None, it should be a tuple containing the channels mean and std
+        respectively. The default value is `None` (no normalization).
+
+    Returns
+    -------
+
+    transforms : torchvision.transforms
+        The transforms that are applied to each data point.
+
+    """
+
+    # Keep this as an example
+    # transform = transforms.Compose([
+        # transforms.Resize(256),
+        # transforms.RandomCrop(224),
+        # transforms.RandomHorizontalFlip(),
+        # transforms.ToTensor(),
+        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+    # First create the list of transforms, add each one individually (for
+    # better code readability), then return a composition of all the
+    # transforms.
+
+    transforms_list = list()
+
+    # TODO to move, dataset specific
+    transforms_list.append(transforms.ToPILImage())
+
+    # Slightly change colors
+    if level >= 3:
+        colorjitter_transform = transforms.ColorJitter(
+            brightness=0.2,
+            contrast=0.2,
+            saturation=0.2)
+        transforms_list.append(transforms.RandomApply(
+            [colorjitter_transform], 0.5))
+
+    # Horizontal/vertical flip with 0.5 chance
+    if level >= 4:
+        rotation_transform = transforms.RandomRotation(
+            20, resample=PIL.Image.BILINEAR)
+        transforms_list.append(
+            transforms.RandomApply([rotation_transform], p=0.5))
+
+    # A random resized crop
+    if level >= 2:
+        # TODO dataset specific, move elsewhere
+        # crop_transform = transforms.RandomResizedCrop(
+            # (450, 600), scale=(0.8, 1.0), ratio=(1, 1)) # noqa
+        crop_transform = transforms.RandomResizedCrop(
+            (48, 48), scale=(0.8, 1.0), ratio=(1, 1))
+
+        transforms_list.append(
+            transforms.RandomApply([crop_transform], p=0.5))
+
+    # Horizontal/vertical flip with 0.5 chance
+    if level >= 1:
+        transforms_list.append(transforms.RandomHorizontalFlip(0.5))
+    if level >= 1.5:
+        transforms_list.append(transforms.RandomVerticalFlip(0.5))
+
+    transforms_list.append(transforms.ToTensor())
+
+    # Add normalization?
+    # if normalize_input:
+        # transforms_list.append(transforms.Normalize(
+            # constants.NORMALIZATION_MEAN,
+            # constants.NORMALIZATION_STD))
+    if input_normalization is not None:
+        transforms_list.append(transforms.Normalize(
+            input_normalization[0],
+            input_normalization[1]))
+
+    return transforms.Compose(transforms_list)
 
 
 def create_loss_plot(exp_dir, epochs, train_losses, test_losses):

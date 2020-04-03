@@ -15,8 +15,6 @@ from tqdm import tqdm
 
 import matplotlib
 
-import PIL
-
 matplotlib.use('agg')
 
 from sklearn.metrics import confusion_matrix, balanced_accuracy_score
@@ -26,11 +24,6 @@ import numpy as np
 # Torch stuff
 import torch.optim as optim
 import torch.nn as nn
-
-# from torch.utils.data.sampler import RandomSampler
-from torch.utils.data.dataloader import DataLoader
-
-from torch.utils.data import WeightedRandomSampler, RandomSampler
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -45,17 +38,17 @@ from torchvision.models.alexnet import alexnet
 from torchvision.models.resnet import (
     resnet50, resnet34, resnet101, resnet152)
 
-import torchvision.transforms as transforms
-
-# Experiment specific imports
-from lib.dataset.peltarion import Peltarion
-
 from lib.utils import (
     setup_logging, save_checkpoint, create_loss_plot, cm2df,
     produce_per_class_stats)
 
 # Collect constants in separate file, C headers style.
 import constants
+
+# Import experiment specific stuff
+# from konfiguration import dataset, network
+# from konfiguration import dataset
+from konfiguration import train_loader, val_loader
 
 
 def parse_args():
@@ -374,94 +367,6 @@ def test(net, val_loader, criterion,
     return test_loss/(batch_idx+1), acc, best_acc
 
 
-def get_data_augmentation_transforms(level, normalize_input=False):
-    """Returns the list of transforms to be applied to the a dataset,
-       for data augmentation.
-
-    Parameters
-    ----------
-
-    level : int
-        The level of data augmentation applied.
-        0: no data augmentation (just transform to tensor using
-        transforms.ToTensor())
-        1: horizontal/vertical flips, chance 0.5
-        2: random resized crops, chance 0.5
-        3: alter the color space of images, chance 0.5
-
-    normalize_input : bool, optional
-        Wether to normalize the input by subtracting mean and dividing by
-        standard deviation, so that values lie in the -1, 1 interval. The
-        default is `False`.
-
-    Returns
-    -------
-
-    transforms : torchvision.transforms
-        The transforms that are applied to each data point.
-
-    """
-
-    # Keep this as an example
-    # transform = transforms.Compose([
-        # transforms.Resize(256),
-        # transforms.RandomCrop(224),
-        # transforms.RandomHorizontalFlip(),
-        # transforms.ToTensor(),
-        # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-
-    # First create the list of transforms, add each one individually (for
-    # better code readability), then return a composition of all the
-    # transforms.
-
-    transforms_list = list()
-
-    # TODO to move, dataset specific
-    transforms_list.append(transforms.ToPILImage())
-
-    # Slightly change colors
-    if level >= 3:
-        colorjitter_transform = transforms.ColorJitter(
-            brightness=0.2,
-            contrast=0.2,
-            saturation=0.2)
-        transforms_list.append(transforms.RandomApply(
-            [colorjitter_transform], 0.5))
-
-    # Horizontal/vertical flip with 0.5 chance
-    if level >= 4:
-        rotation_transform = transforms.RandomRotation(
-            20, resample=PIL.Image.BILINEAR)
-        transforms_list.append(
-            transforms.RandomApply([rotation_transform], p=0.5))
-
-    # A random resized crop
-    if level >= 2:
-        # crop_transform = transforms.RandomResizedCrop(
-            # (450, 600), scale=(0.8, 1.0), ratio=(1, 1))
-        crop_transform = transforms.RandomResizedCrop(
-            (48, 48), scale=(0.8, 1.0), ratio=(1, 1))
-
-        transforms_list.append(
-            transforms.RandomApply([crop_transform], p=0.5))
-
-    # Horizontal/vertical flip with 0.5 chance
-    if level >= 1:
-        transforms_list.append(transforms.RandomHorizontalFlip(0.5))
-    if level >= 1.5:
-        transforms_list.append(transforms.RandomVerticalFlip(0.5))
-
-    transforms_list.append(transforms.ToTensor())
-
-    # Add normalization?
-    if normalize_input:
-        transforms_list.append(transforms.Normalize(
-            constants.NORMALIZATION_MEAN,
-            constants.NORMALIZATION_STD))
-
-    return transforms.Compose(transforms_list)
-
-
 def main():  # noqa
 
     args = parse_args()
@@ -512,65 +417,6 @@ def main():  # noqa
                                                 # args.train_fraction,
                                                 # args.val_fraction)
 
-    # Load datasets
-    train_transforms = get_data_augmentation_transforms(
-        args.data_augmentation_level, args.normalize_input)
-
-    # TODO dataset specific, move somewhere else
-    class_map_dict = {
-        0: "Angry",
-        1: "Disgust",
-        2: "Fear",
-        3: "Happy",
-        4: "Sad",
-        5: "Surprise",
-        6: "Neutral"
-    }
-
-    # TODO dataset specific, move somewhere else
-    train_set = Peltarion(
-        args.data_dir, 'train',
-        args.input_features, target_column='emotion',
-        class_map_dict=class_map_dict,
-        transforms=train_transforms)
-
-    # For validation have data augmentation level set to 0 (NO DA)
-    val_transforms = get_data_augmentation_transforms(
-        0, args.normalize_input)
-
-    val_set = Peltarion(
-        args.data_dir, 'test',
-        args.input_features, target_column='emotion',
-        class_map_dict=class_map_dict,
-        transforms=val_transforms)
-
-    weights = train_set.make_weights_for_balanced_classes()
-
-    # N_samples_per_epoch = len(weights)
-    # This one is sort of eyeballed based on a few assumptions
-    # TODO explain
-    # N_samples_per_epoch = 50 * 7 * args.batch_size
-    N_samples_per_epoch = 1000 * args.batch_size
-
-    # For finding appropriate lr
-    # N_samples_per_epoch = 50 * 7
-    train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
-    # train_sampler = RandomSampler(train_set)
-    val_sampler = RandomSampler(val_set)
-
-    num_classes = train_set.get_num_classes()
-
-    # Use custom sampler for train_loader
-    train_loader = DataLoader(train_set,
-                              batch_size=args.batch_size,
-                              sampler=train_sampler,
-                              num_workers=8)
-
-    val_loader = DataLoader(val_set,
-                            batch_size=args.batch_size,
-                            sampler=val_sampler,
-                            num_workers=8)
-
     # Model.
     logger.info('==> Building model..')
 
@@ -580,6 +426,9 @@ def main():  # noqa
     if args.use_pretrained:
         # Load checkpoint.
         logger.info('==> Using pretrained model..')
+
+    # num_classes = train_set.get_num_classes()
+    num_classes = train_loader.dataset.get_num_classes()
 
     if args.network == 'SimpleCNN':
         net = SimpleCNN(num_classes=num_classes)
@@ -599,7 +448,7 @@ def main():  # noqa
         net.fc = nn.Linear(2048, num_classes)
         # TODO network specific, move somewhere else
         net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+                              bias=False)
 
     elif args.network == 'resnet101':
         net = resnet101(pretrained=args.use_pretrained)
@@ -640,7 +489,8 @@ def main():  # noqa
 
     # Define the loss
     if args.class_weights is not None:
-        assert (len(args.class_weights) == train_set.get_num_classes())
+        assert (
+            len(args.class_weights) == train_loader.dataset.get_num_classes())
         logger.info('==> Using class weights for loss:')
         logger.info("==> {}".format(args.class_weights))
         loss_weights = torch.Tensor(args.class_weights)
