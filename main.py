@@ -48,7 +48,7 @@ import constants
 # Import experiment specific stuff
 # from konfiguration import dataset, network
 # from konfiguration import dataset
-from konfiguration import train_loader, val_loader
+from konfiguration import train_loader, val_loader, num_classes
 
 
 def parse_args():
@@ -57,7 +57,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description='PyTorch classifier on custom dataset')
 
-    parser.add_argument('--data-dir', help='Path to data', required=True)
+    # TODO move to konfiguration probably
+    # parser.add_argument('--data-dir', help='Path to data', required=True)
 
     parser.add_argument('--train_fraction', default=0.8, type=float,
                         help='fraction of dataset to use for training')
@@ -65,10 +66,10 @@ def parse_args():
     parser.add_argument('--val_fraction', default=0.2, type=float,
                         help='fraction of dataset to use for validation')
 
-    parser.add_argument('--input-features', nargs='+', type=str,
-                        help='List of columns where inpute features are',
-                        metavar='FEATURE_NAME',
-                        required=True)
+    # parser.add_argument('--input-features', nargs='+', type=str,
+                        # help='List of columns where inpute features are',
+                        # metavar='FEATURE_NAME',
+                        # required=True)
 
     parser.add_argument('--exp-name', default='baseline', type=str,
                         help='name of experiment')
@@ -128,13 +129,13 @@ def parse_args():
 
 # Training.
 def train(net, train_loader, criterion, optimizer,
-          batch_size, device, epoch, logger, writer, exp_dir):
+          batch_size, device, epoch, logger, writer, exp_dir,
+          print_every=50):
     """Performs training for one epoch
-    """
 
-    # TODO move in arguments
-    # print message only every N batches
-    print_every = 50
+    print_every : int
+        Print message only every N batches. Default 50.
+    """
 
     logger.info('Epoch: {}'.format(epoch + 1))
 
@@ -204,6 +205,9 @@ def train(net, train_loader, criterion, optimizer,
         # Save confusion matrix
         np.save(os.path.join(exp_dir, "confusion_matrix_train_latest.npy"), cm)
 
+        # TODO check what happens if class_map_dict is not set (also for
+        # validation)
+
         # Get detailed stats per class
         stats_per_class = produce_per_class_stats(
             all_targets, all_predicted, train_loader.dataset.class_map_dict)
@@ -220,12 +224,12 @@ def train(net, train_loader, criterion, optimizer,
 
         cm_pretty = cm2df(cm, train_loader.dataset.class_map_dict)
 
+        print(cm_pretty)
+
         # Compute balanced accuracy
         bal_acc = balanced_accuracy_score(all_targets, all_predicted)
 
         writer.add_scalar("balanced_accuracy/train", bal_acc, epoch)
-
-        print(cm_pretty)
 
     # Add accuracy on validation set to tb
     writer.add_scalar("accuracy/train", acc, epoch)
@@ -288,7 +292,8 @@ def test(net, val_loader, criterion,
     test_loss = 0
     correct = 0
     total = 0
-    n_batches = len(val_loader.dataset) // batch_size
+    # n_batches = len(val_loader.dataset) // batch_size
+    n_batches = len(val_loader)
 
     all_targets = np.array([], dtype=int)
     all_predicted = np.array([], dtype=int)
@@ -428,7 +433,7 @@ def main():  # noqa
         logger.info('==> Using pretrained model..')
 
     # num_classes = train_set.get_num_classes()
-    num_classes = train_loader.dataset.get_num_classes()
+    # num_classes = train_loader.dataset.get_num_classes()
 
     if args.network == 'SimpleCNN':
         net = SimpleCNN(num_classes=num_classes)

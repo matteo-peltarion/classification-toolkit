@@ -66,7 +66,7 @@ def get_data_augmentation_transforms(level, input_normalization=None):
     transforms_list = list()
 
     # TODO to move, dataset specific
-    transforms_list.append(transforms.ToPILImage())
+    # transforms_list.append(transforms.ToPILImage())
 
     # Slightly change colors
     if level >= 3:
@@ -90,7 +90,7 @@ def get_data_augmentation_transforms(level, input_normalization=None):
         # crop_transform = transforms.RandomResizedCrop(
             # (450, 600), scale=(0.8, 1.0), ratio=(1, 1)) # noqa
         crop_transform = transforms.RandomResizedCrop(
-            (48, 48), scale=(0.8, 1.0), ratio=(1, 1))
+            (224, 224), scale=(0.8, 1.0), ratio=(1, 1))
 
         transforms_list.append(
             transforms.RandomApply([crop_transform], p=0.5))
