@@ -17,6 +17,10 @@ import matplotlib
 
 matplotlib.use('agg')
 
+import matplotlib.pyplot as plt
+
+from torch_lr_finder import LRFinder
+
 from sklearn.metrics import confusion_matrix, balanced_accuracy_score
 
 import numpy as np
@@ -110,6 +114,10 @@ def parse_args():
 
     parser.add_argument('--num-epochs', default=10, type=int,
                         help='Number of training epochs')
+
+    parser.add_argument('--lr-finder',
+                        action='store_true',
+                        help='Exploratory run for finding best lr finder.')  # noqa
 
     parser.add_argument('--normalize-input',
                         action='store_true',
@@ -520,18 +528,57 @@ def main():  # noqa
     else:
         milestones = args.milestones
 
-    # Set lr scheduler
-    lr_scheduler = optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=milestones,
-        last_epoch=start_epoch-1,
-        gamma=args.scheduler_gamma)  # default: 0.1
-        # gamma=0.3162)  # sqrt(0.1)
+    # Learning rate scheduler must not be set when running the lr finder
+    if not args.lr_finder:
+
+        # Set lr scheduler
+        lr_scheduler = optim.lr_scheduler.MultiStepLR(
+            optimizer, milestones=milestones,
+            last_epoch=start_epoch-1,
+            gamma=args.scheduler_gamma)  # default: 0.1
+            # gamma=0.3162)  # sqrt(0.1)
 
     epochs, train_losses, test_losses = [], [], []
 
     # Keep an eye on how long it takes to train for one epoch
     times_train = list()
     times_val = list()
+
+    #################
+    ### LR FINDER ###  # noqa
+    #################
+
+    if args.lr_finder:
+
+        # Try up to two orders of magnitude greater
+        end_lr = 100*args.lr
+
+        print(f"Trying 100 values between {args.lr} and {end_lr}")
+
+        # TODO Move this stuff in separate function?
+        lr_finder = LRFinder(net, optimizer, criterion, device="cuda")
+        # lr_finder.range_test(train_loader, end_lr=1e-2, num_iter=2)
+        lr_finder.range_test(train_loader, end_lr=end_lr, num_iter=100)
+
+        # print(lr_finder.history)
+
+        # Plot loss against lr
+        fig, ax = plt.subplots()
+
+        ax.plot(lr_finder.history["lr"], lr_finder.history["loss"])
+        ax.set_xscale('log')
+
+        # Plot title and axis labels
+        ax.set_title("LR finder results")
+        ax.set_xlabel("lr")
+        ax.set_ylabel("Loss")
+
+        plt.savefig("XXX.png")
+        return
+
+    ################
+    ### TRAINING ###  # noqa
+    ################
 
     # Training loop
     for epoch in range(start_epoch, args.num_epochs):
