@@ -19,8 +19,6 @@ matplotlib.use('agg')
 
 import matplotlib.pyplot as plt
 
-from torch_lr_finder import LRFinder
-
 from sklearn.metrics import confusion_matrix, balanced_accuracy_score
 
 import numpy as np
@@ -549,6 +547,9 @@ def main():  # noqa
     #################
 
     if args.lr_finder:
+
+        # Import is here so that it doesn't mess with logging
+        from torch_lr_finder import LRFinder
 
         # Try up to two orders of magnitude greater
         end_lr = 100*args.lr
