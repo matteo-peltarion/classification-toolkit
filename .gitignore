@@ -124,3 +124,6 @@ train_command_*.sh
 
 # Include train command for best model
 !train_command_run22.sh
+
+# Actual configuration file (not the template)
+konfiguration.py
