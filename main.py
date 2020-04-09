@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Train classifier on Husqvarna dataset.
 """
 
