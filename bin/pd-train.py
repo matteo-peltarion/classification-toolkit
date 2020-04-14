@@ -34,7 +34,7 @@ import torch
 # import torch.backends.cudnn as cudnn
 
 # Network options
-from networks.SimpleCNN import SimpleCNN
+from palladio.networks.SimpleCNN import SimpleCNN
 
 from torchvision.models.vgg import vgg16
 from torchvision.models.alexnet import alexnet
