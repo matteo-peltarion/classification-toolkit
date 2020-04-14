@@ -24,6 +24,7 @@ setuptools.setup(
     python_requires='>=3.6',
     scripts=[
         'bin/pd-train.py',
-        'bin/pd-init',
-    ]
+        'bin/pd-init.py',
+    ],
+    package_data={'palladio.config': ['config/konfiguration.template.py']},
 )
