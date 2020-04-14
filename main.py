@@ -51,7 +51,8 @@ import constants
 # Import experiment specific stuff
 # from konfiguration import dataset, network
 # from konfiguration import dataset
-from konfiguration import train_loader, val_loader, num_classes
+from konfiguration import (
+    train_loader, val_loader, num_classes, class_map_dict)
 
 
 def parse_args():
@@ -217,19 +218,19 @@ def train(net, train_loader, criterion, optimizer,
 
         # Get detailed stats per class
         stats_per_class = produce_per_class_stats(
-            all_targets, all_predicted, train_loader.dataset.class_map_dict)
+            all_targets, all_predicted, class_map_dict)
 
         # Add scalars corresponding to these metrics to tensorboard
         for score in ['precision_score', 'recall_score',
                       'roc_auc_score']:
-            for k in train_loader.dataset.class_map_dict:
+            for k in class_map_dict:
                 # Add scalars to tb
                 writer.add_scalar(
                     "{}_{}_train".format(k, score),
                     stats_per_class[k][score],
                     epoch)
 
-        cm_pretty = cm2df(cm, train_loader.dataset.class_map_dict)
+        cm_pretty = cm2df(cm, class_map_dict)
 
         print(cm_pretty)
 
@@ -334,18 +335,18 @@ def test(net, val_loader, criterion,
 
     # Get detailed stats per class
     stats_per_class = produce_per_class_stats(
-        all_targets, all_predicted, val_loader.dataset.class_map_dict)
+        all_targets, all_predicted, class_map_dict)
 
     # Add scalars corresponding to these metrics to tensorboard
     for score in ['precision_score', 'recall_score', 'roc_auc_score']:
-        for k in val_loader.dataset.class_map_dict:
+        for k in class_map_dict:
             # Add scalars to tb
             writer.add_scalar(
                 "{}_{}_val".format(k, score),
                 stats_per_class[k][score],
                 epoch)
 
-    cm_pretty = cm2df(cm, val_loader.dataset.class_map_dict)
+    cm_pretty = cm2df(cm, class_map_dict)
 
     print(cm_pretty)
 
