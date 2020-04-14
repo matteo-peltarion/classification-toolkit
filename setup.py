@@ -24,5 +24,6 @@ setuptools.setup(
     python_requires='>=3.6',
     scripts=[
         'bin/pd-train.py',
+        'bin/pd-init',
     ]
 )
