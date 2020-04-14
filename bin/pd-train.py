@@ -595,7 +595,7 @@ def main():  # noqa
         ax.set_xlabel("lr")
         ax.set_ylabel("Loss")
 
-        plt.savefig("XXX.png")
+        plt.savefig("lr_finder_output.png")
         return
 
     ################
