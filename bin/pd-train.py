@@ -48,11 +48,11 @@ from lib.utils import (
 # Collect constants in separate file, C headers style.
 import constants
 
-# Import experiment specific stuff
-# from konfiguration import dataset, network
-# from konfiguration import dataset
-from konfiguration import (
-    train_loader, val_loader, num_classes, class_map_dict)
+# Required for loading configuration dynamically
+import importlib.util
+
+# global
+class_map_dict = None
 
 
 def parse_args():
@@ -126,6 +126,10 @@ def parse_args():
     parser.add_argument('--optimizer', default='Adam',
                         choices=['Adam', 'SGD'],
                         help='Optimizer.')
+
+    parser.add_argument('--konfiguration', '-K', type=str,
+                        default='konfiguration.py',
+                        help='Path to file containing configuration.')
 
     parser.add_argument('--resume', '-r',
                         action='store_true', help='resume from checkpoint')
@@ -426,9 +430,24 @@ def main():  # noqa
     # Initialize datasets and loaders.
     logger.info('==> Preparing data..')
 
-    # train_ids, val_ids = create_train_val_split(args.data_dir,
-                                                # args.train_fraction,
-                                                # args.val_fraction)
+    spec = importlib.util.spec_from_file_location(
+        "konfiguration",
+        "konfiguration.py")
+    konfiguration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(konfiguration)
+
+    # Import experiment specific stuff
+    # from konfiguration import (
+        # train_loader, val_loader, num_classes, _class_map_dict)
+
+    # Manually load stuf from konfiguration
+    train_loader = konfiguration.train_loader
+    val_loader = konfiguration.val_loader
+    num_classes = konfiguration.num_classes
+    _class_map_dict = konfiguration.class_map_dict
+
+    global class_map_dict
+    class_map_dict = _class_map_dict
 
     # Model.
     logger.info('==> Building model..')
