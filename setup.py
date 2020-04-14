@@ -23,6 +23,6 @@ setuptools.setup(
     ],
     python_requires='>=3.6',
     scripts=[
-        'bin/train.py',
+        'bin/pd-train.py',
     ]
 )
