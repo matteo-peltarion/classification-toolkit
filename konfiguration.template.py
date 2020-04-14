@@ -1,25 +1,21 @@
 # Experiment specific imports
 # from lib.dataset.peltarion import Peltarion
-import os
+# import os
 
-from torchvision.datasets import ImageFolder
+from torchvision.datasets import FashionMNIST
 
 from lib.utils import get_data_augmentation_transforms
 
 from torch.utils.data.dataloader import DataLoader
 
-from torch.utils.data import WeightedRandomSampler, RandomSampler
-
-from PIL import Image
+# from torch.utils.data import WeightedRandomSampler, RandomSampler
+from torch.utils.data import RandomSampler
 
 ########################
 ####### Settings ####### #noqa
 ########################
 
 # Dataset
-DATA_DIR = "/home/matteo/project/IPSOS-er/data/fer2013/fer_7"
-
-INPUT_FEATURES = ["images"]
 
 # Data augmentation/transformation
 DATA_AUGMENTATION_LEVEL = 0
@@ -32,60 +28,32 @@ BATCH_SIZE = 32
 train_transforms = get_data_augmentation_transforms(
     DATA_AUGMENTATION_LEVEL, INPUT_NORMALIZATION)
 
-# img_loader = lambda path: with open(path, 'rb') as f:
-        # img = Image.open(f)
-
-# This is done to prevent forcing load of a RGB image
-img_loader = lambda path: Image.open(path)
-
-###################
-####### END ####### #noqa
-###################
-
-# TODO dataset specific, move somewhere else
-class_map_dict = {
-    0: "angry",
-    1: "disgust",
-    2: "fear",
-    3: "happy",
-    4: "sad",
-    5: "surprise",
-    6: "neutral"
-}
-
-# TODO dataset specific, move somewhere else
-# train_set = Peltarion(
-    # DATA_DIR, 'train',
-    # INPUT_FEATURES, target_column='emotion',
-    # class_map_dict=class_map_dict,
-    # transforms=train_transforms)
-
-train_set = ImageFolder(
-    os.path.join(DATA_DIR, 'fer_train'),
-    transform=train_transforms,
-    loader=img_loader)
-
-train_set.class_map_dict = class_map_dict
-
-# print(dir(train_set))
-# print(train_set.classes)
+train_set = FashionMNIST(
+    '.', train=True, transform=train_transforms, download=True)
 
 # For validation have data augmentation level set to 0 (NO DA)
 val_transforms = get_data_augmentation_transforms(
     0, INPUT_NORMALIZATION)
 
-# val_set = Peltarion(
-    # DATA_DIR, 'test',
-    # INPUT_FEATURES, target_column='emotion',
-    # class_map_dict=class_map_dict,
-    # transforms=val_transforms)
-val_set = ImageFolder(
-    os.path.join(DATA_DIR, 'fer_val'),
-    # transform=val_transforms)
-    transform=train_transforms,
-    loader=img_loader)
+val_set = FashionMNIST(
+    '.', train=False, transform=val_transforms, download=True)
 
-val_set.class_map_dict = class_map_dict
+class_map_dict = {
+    0: "T-shirt/top",
+    1: "Trouser",
+    2: "Pullover",
+    3: "Dress",
+    4: "Coat",
+    5: "Sandal",
+    6: "Shirt",
+    7: "Sneaker",
+    8: "Bag",
+    9: "Ankle boot",
+}
+
+###################
+####### END ####### #noqa
+###################
 
 # weights = train_set.make_weights_for_balanced_classes()
 
@@ -114,4 +82,4 @@ val_loader = DataLoader(val_set,
                         num_workers=6)
 
 # Specify number of classes
-num_classes = 7
+num_classes = len(class_map_dict)
