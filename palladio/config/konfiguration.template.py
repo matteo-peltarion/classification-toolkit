@@ -28,6 +28,8 @@ BATCH_SIZE = 32
 train_transforms = get_data_augmentation_transforms(
     DATA_AUGMENTATION_LEVEL, INPUT_NORMALIZATION)
 
+# Use dataset FashionMNIST
+# https://github.com/zalandoresearch/fashion-mnist
 train_set = FashionMNIST(
     '.', train=True, transform=train_transforms, download=True)
 
