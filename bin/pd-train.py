@@ -45,14 +45,14 @@ from lib.utils import (
     setup_logging, save_checkpoint, create_loss_plot, cm2df,
     produce_per_class_stats)
 
-# Collect constants in separate file, C headers style.
-import constants
-
 # Required for loading configuration dynamically
 import importlib.util
 
 # global
 class_map_dict = None
+
+# Format of status message
+STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
 
 
 def parse_args():
@@ -194,7 +194,7 @@ def train(net, train_loader, criterion, optimizer,
         acc = 100.*correct/total
 
         if (batch_idx + 1) % print_every == 0:
-            logger.info(constants.STATUS_MSG.format(
+            logger.info(STATUS_MSG.format(
                 batch_idx+1,
                 n_batches,
                 train_loss/(batch_idx+1),
