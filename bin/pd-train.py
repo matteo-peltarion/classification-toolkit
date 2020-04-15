@@ -6,7 +6,7 @@ import os
 
 import time
 
-import datetime
+from datetime import datetime, timedelta
 
 import logging
 
@@ -33,13 +33,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 # import torch.backends.cudnn as cudnn
 
-# Network options
-from palladio.networks.SimpleCNN import SimpleCNN
-
-from torchvision.models.vgg import vgg16
-from torchvision.models.alexnet import alexnet
-from torchvision.models.resnet import (
-    resnet50, resnet34, resnet101, resnet152)
+from palladio.networks.utils import get_network
 
 from lib.utils import (
     setup_logging, save_checkpoint, create_loss_plot, cm2df,
@@ -64,11 +58,11 @@ def parse_args():
     # TODO move to konfiguration probably
     # parser.add_argument('--data-dir', help='Path to data', required=True)
 
-    parser.add_argument('--train_fraction', default=0.8, type=float,
-                        help='fraction of dataset to use for training')
+    # parser.add_argument('--train_fraction', default=0.8, type=float,
+                        # help='fraction of dataset to use for training')
 
-    parser.add_argument('--val_fraction', default=0.2, type=float,
-                        help='fraction of dataset to use for validation')
+    # parser.add_argument('--val_fraction', default=0.2, type=float,
+                        # help='fraction of dataset to use for validation')
 
     # parser.add_argument('--input-features', nargs='+', type=str,
                         # help='List of columns where inpute features are',
@@ -393,8 +387,9 @@ def main():  # noqa
     os.makedirs(exp_dir, exist_ok=True)
 
     # Writer will output to ./runs/ directory by default
-    # writer = SummaryWriter(os.path.join(exp_dir, "tb_log"))
-    writer = SummaryWriter(comment=args.exp_name)
+    writer = SummaryWriter(
+        log_dir="tb_logs/"+args.exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
+        comment=args.exp_name)
 
     # Logging
     logger = logging.getLogger(__name__)
@@ -407,7 +402,7 @@ def main():  # noqa
     experiment_start = time.time()
 
     logger.info("Experiment started at {}".format(
-        datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
+        datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
 
     # Globals. NOPE
 
@@ -459,42 +454,8 @@ def main():  # noqa
         # Load checkpoint.
         logger.info('==> Using pretrained model..')
 
-    # num_classes = train_set.get_num_classes()
-    # num_classes = train_loader.dataset.get_num_classes()
-
-    if args.network == 'SimpleCNN':
-        net = SimpleCNN(num_classes=num_classes)
-        # net = MyCNN(num_classes=num_classes)
-    elif args.network == 'Alexnet':
-        net = alexnet(pretrained=args.use_pretrained)
-        net.classifier[6] = nn.Linear(4096, num_classes)
-
-    elif args.network == 'resnet34':
-        # net = resnet34(num_classes=num_classes)
-
-        net = resnet34(pretrained=args.use_pretrained)
-        net.fc = nn.Linear(512, num_classes)
-
-    elif args.network == 'resnet50':
-        net = resnet50(pretrained=args.use_pretrained)
-        net.fc = nn.Linear(2048, num_classes)
-        # TODO network specific, move somewhere else
-        net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
-                              bias=False)
-
-    elif args.network == 'resnet101':
-        net = resnet101(pretrained=args.use_pretrained)
-        net.fc = nn.Linear(2048, num_classes)
-
-    elif args.network == 'resnet152':
-        net = resnet152(pretrained=args.use_pretrained)
-        net.fc = nn.Linear(2048, num_classes)
-    elif args.network == 'VGG16':
-        # net = vgg16(num_classes=num_classes)
-
-        net = vgg16(pretrained=args.use_pretrained)
-        # TODO check this
-        net.classifier[6] = nn.Linear(4096, num_classes)
+    # Build network
+    net = get_network(args, num_classes)
 
     if args.resume:
         # Load checkpoint.
@@ -512,12 +473,6 @@ def main():  # noqa
         start_epoch = 0
 
     net = net.to(device)
-
-    # You seem weird, let's shush you
-    # if device == 'cuda':
-        # #
-        # net = torch.nn.DataParallel(net)
-        # cudnn.benchmark = True
 
     # Define the loss
     if args.class_weights is not None:
@@ -653,15 +608,15 @@ def main():  # noqa
 
         logger.info("Elapsed time after epoch {}: {} ({} per epoch)".format(
             epoch+1,
-            datetime.timedelta(
+            timedelta(
                 seconds=int(toc - experiment_start)),
-            datetime.timedelta(
+            timedelta(
                 seconds=int(estimated_seconds_per_epoch)),
         ))
 
         # Estimate ETA
-        eta = (datetime.datetime.now() +
-               datetime.timedelta(
+        eta = (datetime.now() +
+               timedelta(
                    seconds=(args.num_epochs - epoch - 1) *
                    estimated_seconds_per_epoch))
 
@@ -692,10 +647,10 @@ def main():  # noqa
     experiment_end = time.time()
 
     logger.info("Experiment ended at {}".format(
-        datetime.datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
+        datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
 
     logger.info("Elapsed time: {}".format(
-        datetime.timedelta(seconds=int(experiment_end - experiment_start))))
+        timedelta(seconds=int(experiment_end - experiment_start))))
 
     writer.close()
 
