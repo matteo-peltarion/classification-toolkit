@@ -36,101 +36,146 @@ import torch
 from palladio.networks.utils import get_network
 
 from lib.utils import (
-    setup_logging, save_checkpoint, create_loss_plot, cm2df,
+    save_checkpoint, create_loss_plot, cm2df,
     produce_per_class_stats)
 
 # Required for loading configuration dynamically
 import importlib.util
 
+# Imports for experiment tracking
+from sacred import Experiment
+from sacred.observers import MongoObserver
+
 # global
 class_map_dict = None
+
+ex = Experiment('FashionMNIST')
 
 # Format of status message
 STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
 
+ex.observers.append(MongoObserver(
+    url='mongodb://sample:password@localhost/?authMechanism=SCRAM-SHA-1',
+    db_name='db'))
 
-def parse_args():
 
-    # Parse args.
-    parser = argparse.ArgumentParser(
-        description='PyTorch classifier on custom dataset')
+@ex.config
+def config():
 
-    # TODO move to konfiguration probably
-    # parser.add_argument('--data-dir', help='Path to data', required=True)
+    batch_size = 4  # noqa
 
-    # parser.add_argument('--train_fraction', default=0.8, type=float,
-                        # help='fraction of dataset to use for training')
+    lr = 0.001  # noqa
 
-    # parser.add_argument('--val_fraction', default=0.2, type=float,
-                        # help='fraction of dataset to use for validation')
+    network_name = 'resnet50'  # noqa
 
-    # parser.add_argument('--input-features', nargs='+', type=str,
-                        # help='List of columns where inpute features are',
-                        # metavar='FEATURE_NAME',
-                        # required=True)
+    num_epochs = 2  # noqa
 
-    parser.add_argument('--exp-name', default='baseline', type=str,
-                        help='name of experiment')
+    use_pretrained = False  # noqa
 
-    parser.add_argument('--log-level', default='INFO',
-                        choices=['DEBUG', 'INFO'], help='log-level to use')
+    # optimizer = optim.Adam(
+        # net.parameters(), lr=lr, weight_decay=weight_decay)
 
-    parser.add_argument('--data-augmentation-level', default=0, type=int,
-                        help='Sets different options for DA.')
+    # optimizer = 'Adam'  # noqa
+    optimizer_class = optim.Adam  # noqa
 
-    parser.add_argument('--batch-size', default=4, type=int,
-                        help='batch-size to use')
+    resume = False  # noqa
+    class_weights = None  # noqa
+    milestones = list()  # noqa
+    scheduler_gamma = 0.1  # noqa
+    lr_finder = False  # XXX to change, should be separate task  # noqa
+    weight_decay = 0  # noqa
 
-    parser.add_argument('--lr', default=1e-3, type=float,
-                        help='Learning rate')
 
-    parser.add_argument('--weight-decay', default=0.0, type=float,
-                        help='Weight decay parameter for optimizer.')
+@ex.capture
+def get_info(_run):
+    # print(_run._id)
+    # print(_run.experiment_info["name"])
 
-    parser.add_argument('--scheduler-gamma', default=0.1, type=float,
-                        help='Gamma parameter for learning rate scheduler.')
+    return _run.experiment_info["name"]
 
-    parser.add_argument('--class-weights', nargs='+', type=float,
-                        help='Weights for class (used for loss)')
 
-    parser.add_argument('--milestones', nargs='+', type=int,
-                        help='Milestones for lr scheduler')
+# def parse_args():
 
-    parser.add_argument('--network', default='SimpleCNN',
-                        choices=[
-                            'SimpleCNN', 'VGG16', 'Alexnet',
-                            'resnet34', 'resnet50', 'resnet101', 'resnet152'],
-                        help='network architecture')
+    # # Parse args.
+    # parser = argparse.ArgumentParser(
+        # description='PyTorch classifier on custom dataset')
 
-    parser.add_argument('--use-pretrained',
-                        action='store_true',
-                        help='Use a pretrained model.')  # noqa
+    # # TODO move to konfiguration probably
+    # # parser.add_argument('--data-dir', help='Path to data', required=True)
 
-    parser.add_argument('--num-epochs', default=10, type=int,
-                        help='Number of training epochs')
+    # # parser.add_argument('--train_fraction', default=0.8, type=float,
+                        # # help='fraction of dataset to use for training')
 
-    parser.add_argument('--lr-finder',
-                        action='store_true',
-                        help='Exploratory run for finding best lr finder.')  # noqa
+    # # parser.add_argument('--val_fraction', default=0.2, type=float,
+                        # # help='fraction of dataset to use for validation')
 
-    parser.add_argument('--normalize-input',
-                        action='store_true',
-                        help='Normalize input using mean and variance computed on training set')  # noqa
+    # # parser.add_argument('--input-features', nargs='+', type=str,
+                        # # help='List of columns where inpute features are',
+                        # # metavar='FEATURE_NAME',
+                        # # required=True)
 
-    parser.add_argument('--optimizer', default='Adam',
-                        choices=['Adam', 'SGD'],
-                        help='Optimizer.')
+    # parser.add_argument('--exp-name', default='baseline', type=str,
+                        # help='name of experiment')
 
-    parser.add_argument('--konfiguration', '-K', type=str,
-                        default='konfiguration.py',
-                        help='Path to file containing configuration.')
+    # parser.add_argument('--log-level', default='INFO',
+                        # choices=['DEBUG', 'INFO'], help='log-level to use')
 
-    parser.add_argument('--resume', '-r',
-                        action='store_true', help='resume from checkpoint')
+    # parser.add_argument('--data-augmentation-level', default=0, type=int,
+                        # help='Sets different options for DA.')
 
-    args = parser.parse_args()
+    # parser.add_argument('--batch-size', default=4, type=int,
+                        # help='batch-size to use')
 
-    return args
+    # parser.add_argument('--lr', default=1e-3, type=float,
+                        # help='Learning rate')
+
+    # parser.add_argument('--weight-decay', default=0.0, type=float,
+                        # help='Weight decay parameter for optimizer.')
+
+    # parser.add_argument('--scheduler-gamma', default=0.1, type=float,
+                        # help='Gamma parameter for learning rate scheduler.')
+
+    # parser.add_argument('--class-weights', nargs='+', type=float,
+                        # help='Weights for class (used for loss)')
+
+    # parser.add_argument('--milestones', nargs='+', type=int,
+                        # help='Milestones for lr scheduler')
+
+    # parser.add_argument('--network', default='resnet50',
+                        # choices=[
+                            # 'SimpleCNN', 'VGG16', 'Alexnet',
+                            # 'resnet34', 'resnet50', 'resnet101', 'resnet152'],
+                        # help='network architecture')
+
+    # parser.add_argument('--use-pretrained',
+                        # action='store_true',
+                        # help='Use a pretrained model.')  # noqa
+
+    # # parser.add_argument('--num-epochs', default=10, type=int,
+                        # # help='Number of training epochs')
+
+    # parser.add_argument('--lr-finder',
+                        # action='store_true',
+                        # help='Exploratory run for finding best lr finder.')  # noqa
+
+    # parser.add_argument('--normalize-input',
+                        # action='store_true',
+                        # help='Normalize input using mean and variance computed on training set')  # noqa
+
+    # parser.add_argument('--optimizer', default='Adam',
+                        # choices=['Adam', 'SGD'],
+                        # help='Optimizer.')
+
+    # parser.add_argument('--konfiguration', '-K', type=str,
+                        # default='konfiguration.py',
+                        # help='Path to file containing configuration.')
+
+    # parser.add_argument('--resume', '-r',
+                        # action='store_true', help='resume from checkpoint')
+
+    # args = parser.parse_args()
+
+    # return args
 
 
 # Training.
@@ -378,25 +423,47 @@ def test(net, val_loader, criterion,
     return test_loss/(batch_idx+1), acc, best_acc
 
 
-def main():  # noqa
+@ex.automain
+def main(network_name,
+         batch_size,
+         lr,
+         num_epochs,
+         use_pretrained,
+         resume,
+         class_weights,
+         optimizer_class,
+         milestones,
+         scheduler_gamma,
+         lr_finder,  # XXX to change, should be separate task
+         weight_decay):
+    """
+    This is help for main
 
-    args = parse_args()
+    test : float
+        Explanation for parameter test
+    """
 
-    exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
+    exp_name = get_info()
+
+    # exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
+    exp_dir = os.path.join('experiments', '{}'.format(exp_name))
 
     os.makedirs(exp_dir, exist_ok=True)
 
     # Writer will output to ./runs/ directory by default
+    # writer = SummaryWriter(
+        # log_dir="tb_logs/"+args.exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
+        # comment=args.exp_name)
     writer = SummaryWriter(
-        log_dir="tb_logs/"+args.exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
-        comment=args.exp_name)
+        log_dir="tb_logs/"+exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
+        comment=exp_name)
 
     # Logging
     logger = logging.getLogger(__name__)
 
-    log_file = os.path.join(exp_dir, 'log.log')
-
-    setup_logging(log_path=log_file, log_level=args.log_level, logger=logger)
+    # XXX disabled logging setup, as it should be handled by sacred
+    # log_file = os.path.join(exp_dir, 'log.log')
+    # setup_logging(log_path=log_file, log_level=args.log_level, logger=logger)
 
     # Keep track of how much the whole experiment lasts
     experiment_start = time.time()
@@ -404,9 +471,6 @@ def main():  # noqa
     logger.info("Experiment started at {}".format(
         datetime.now().strftime("%d/%m/%Y, %H:%M:%S")))
 
-    # Globals. NOPE
-
-    # device = 'cuda' if torch.cuda.is_available() else 'cpu'
     if torch.cuda.is_available():
         device = 'cuda'
         logger.info('==> CUDA available, Running on GPU :)')
@@ -416,11 +480,12 @@ def main():  # noqa
 
     npy_file = os.path.join(exp_dir, 'final_results.npy')
 
+    # XXX unnecessary, since everything should be saved by sacred
     # Dump arguments in text file inside the experiment folder
-    args_file = os.path.join(exp_dir, 'args.log')
+    # args_file = os.path.join(exp_dir, 'args.log')
 
-    with open(args_file, 'w') as the_file:
-        the_file.write(str(args))
+    # with open(args_file, 'w') as the_file:
+        # the_file.write(str(args))
 
     # Initialize datasets and loaders.
     logger.info('==> Preparing data..')
@@ -450,14 +515,14 @@ def main():  # noqa
     # Set manually the shape of the last layer so that the same line works
     # for pretrained networks as well.
 
-    if args.use_pretrained:
+    if use_pretrained:
         # Load checkpoint.
         logger.info('==> Using pretrained model..')
 
     # Build network
-    net = get_network(args, num_classes)
+    net = get_network(network_name, num_classes, use_pretrained)
 
-    if args.resume:
+    if resume:
         # Load checkpoint.
         logger.info('==> Resuming from checkpoint..')
         # assert (
@@ -475,41 +540,41 @@ def main():  # noqa
     net = net.to(device)
 
     # Define the loss
-    if args.class_weights is not None:
+    if class_weights is not None:
         assert (
-            len(args.class_weights) == train_loader.dataset.get_num_classes())
+            len(class_weights) == train_loader.dataset.get_num_classes())
         logger.info('==> Using class weights for loss:')
-        logger.info("==> {}".format(args.class_weights))
-        loss_weights = torch.Tensor(args.class_weights)
+        logger.info("==> {}".format(class_weights))
+        loss_weights = torch.Tensor(class_weights)
         loss_weights = loss_weights.to(device)
         criterion = nn.CrossEntropyLoss(weight=loss_weights)
     else:
         criterion = nn.CrossEntropyLoss()
 
     # Optimizer
-    optimizer = None
-    if args.optimizer == 'Adam':
-        optimizer = optim.Adam(
-            net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    elif args.optimizer == 'SGD':
-        # TODO momentum might become a parameter?
-        optimizer = optim.SGD(
-            net.parameters(), lr=args.lr, momentum=0.9,
-            weight_decay=args.weight_decay)
+    # optimizer = None
+    # if optimizer == 'Adam':
+        # # optimizer = optim.Adam(
+            # # net.parameters(), lr=args.lr, weight_decay=args.weight_decay)  # noqa
+        # optimizer = optim.Adam(
+            # net.parameters(), lr=lr, weight_decay=weight_decay)
+    # elif args.optimizer == 'SGD':
+        # # TODO momentum might become a parameter?
+        # optimizer = optim.SGD(
+            # net.parameters(), lr=lr, momentum=0.9,
+            # weight_decay=args.weight_decay)
 
-    if args.milestones is None:
-        milestones = []
-    else:
-        milestones = args.milestones
+    optimizer = optimizer_class(
+        net.parameters(), lr=lr, weight_decay=weight_decay)
 
     # Learning rate scheduler must not be set when running the lr finder
-    if not args.lr_finder:
+    if not lr_finder:
 
         # Set lr scheduler
         lr_scheduler = optim.lr_scheduler.MultiStepLR(
             optimizer, milestones=milestones,
             last_epoch=start_epoch-1,
-            gamma=args.scheduler_gamma)  # default: 0.1
+            gamma=scheduler_gamma)  # default: 0.1
             # gamma=0.3162)  # sqrt(0.1)
 
     epochs, train_losses, test_losses = [], [], []
@@ -522,15 +587,15 @@ def main():  # noqa
     ### LR FINDER ###  # noqa
     #################
 
-    if args.lr_finder:
+    if lr_finder:
 
         # Import is here so that it doesn't mess with logging
         from torch_lr_finder import LRFinder
 
         # Try up to two orders of magnitude greater
-        end_lr = 100*args.lr
+        end_lr = 100*lr
 
-        print(f"Trying 100 values between {args.lr} and {end_lr}")
+        print(f"Trying 100 values between {lr} and {end_lr}")
 
         # TODO Move this stuff in separate function?
         lr_finder = LRFinder(net, optimizer, criterion, device="cuda")
@@ -558,12 +623,13 @@ def main():  # noqa
     ################
 
     # Training loop
-    for epoch in range(start_epoch, args.num_epochs):
+    # for epoch in range(start_epoch, args.num_epochs):
+    for epoch in range(start_epoch, num_epochs):
 
         tic = time.time()
 
         # Print the experiment name at the beginning of every loop
-        logger.info("Experiment name: {}".format(args.exp_name))
+        logger.info("Experiment name: {}".format(exp_name))
 
         # Print learning rate
         for param_group in optimizer.param_groups:
@@ -572,9 +638,13 @@ def main():  # noqa
         # Train for one epoch
         train_loss, train_acc = train(
             net, train_loader, criterion, optimizer,
-            args.batch_size, device, epoch, logger, writer, exp_dir)
+            batch_size, device, epoch, logger, writer, exp_dir)
 
         toc = time.time()
+
+        # Log metrics
+        ex.log_scalar("training.loss", train_loss, epoch)
+        ex.log_scalar("training.accuracy", train_acc, epoch)
 
         dt_train = toc - tic
         times_train.append(dt_train)
@@ -589,10 +659,14 @@ def main():  # noqa
         # Test results
         test_loss, test_acc, best_acc = test(
             net, val_loader, criterion,
-            args.batch_size, device, epoch,
+            batch_size, device, epoch,
             logger, writer, exp_dir, best_acc)
 
         toc = time.time()
+
+        # Log metrics
+        ex.log_scalar("validation.loss", test_loss, epoch)
+        ex.log_scalar("validation.accuracy", test_acc, epoch)
 
         dt_val = toc - tic
         test_losses.append(test_loss)
@@ -617,7 +691,7 @@ def main():  # noqa
         # Estimate ETA
         eta = (datetime.now() +
                timedelta(
-                   seconds=(args.num_epochs - epoch - 1) *
+                   seconds=(num_epochs - epoch - 1) *
                    estimated_seconds_per_epoch))
 
         logger.info("ETA: {}".format(eta.strftime("%d/%m/%Y %H:%M:%S")))
@@ -654,7 +728,11 @@ def main():  # noqa
 
     writer.close()
 
+    # Final value
+    return best_acc
 
-if __name__ == '__main__':
 
-    main()
+# XXX this is no longer used with sacred
+# if __name__ == '__main__':
+
+    # main()

@@ -9,15 +9,28 @@ from torchvision.models.resnet import (  # noqa
 import torch.nn as nn
 
 
-def get_network(args, num_classes):
+def get_network(network_name, num_classes, use_pretrained):
 
-    if args.network == 'resnet50':
-        net = resnet50(pretrained=args.use_pretrained)
+    if network_name == 'resnet50':
+        net = resnet50(pretrained=use_pretrained)
         net.fc = nn.Linear(2048, num_classes)
 
         # TODO network specific, move somewhere else
         net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
                               bias=False)
+
+    return net
+
+
+# def get_network(args, num_classes):
+
+    # if args.network == 'resnet50':
+        # net = resnet50(pretrained=args.use_pretrained)
+        # net.fc = nn.Linear(2048, num_classes)
+
+        # # TODO network specific, move somewhere else
+        # net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
+                              # bias=False)
 
     # elif args.network == 'Alexnet':
         # net = alexnet(pretrained=args.use_pretrained)
@@ -47,4 +60,4 @@ def get_network(args, num_classes):
         # net = SimpleCNN(num_classes=num_classes)
         # # net = MyCNN(num_classes=num_classes)
 
-    return net
+    # return net
