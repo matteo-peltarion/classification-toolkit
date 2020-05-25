@@ -35,7 +35,8 @@ import torch
 
 from palladio.networks.utils import get_network
 
-from lib.utils import (
+# from lib.utils import (
+from palladio.utils import (
     save_checkpoint, create_loss_plot, cm2df,
     produce_per_class_stats)
 
