@@ -4,7 +4,8 @@
 
 from torchvision.datasets import FashionMNIST
 
-from lib.utils import get_data_augmentation_transforms
+# from lib.utils import get_data_augmentation_transforms
+from palladio.utils import get_data_augmentation_transforms
 
 from torch.utils.data.dataloader import DataLoader
 
