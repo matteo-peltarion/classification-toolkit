@@ -11,6 +11,8 @@ from torch.utils.data.dataloader import DataLoader
 # from torch.utils.data import WeightedRandomSampler, RandomSampler
 from torch.utils.data import RandomSampler
 
+from torch.nn import CrossEntropyLoss
+
 ########################
 ####### Settings ####### #noqa
 ########################
@@ -52,6 +54,9 @@ class_map_dict = {
     8: "Bag",
     9: "Ankle boot",
 }
+
+# Specify loss
+criterion = CrossEntropyLoss()
 
 ###################
 ####### END ####### #noqa

@@ -505,6 +505,8 @@ def main(network_name,
     train_loader = konfiguration.train_loader
     val_loader = konfiguration.val_loader
     num_classes = konfiguration.num_classes
+    criterion = konfiguration.criterion
+
     _class_map_dict = konfiguration.class_map_dict
 
     global class_map_dict
@@ -541,16 +543,16 @@ def main(network_name,
     net = net.to(device)
 
     # Define the loss
-    if class_weights is not None:
-        assert (
-            len(class_weights) == train_loader.dataset.get_num_classes())
-        logger.info('==> Using class weights for loss:')
-        logger.info("==> {}".format(class_weights))
-        loss_weights = torch.Tensor(class_weights)
-        loss_weights = loss_weights.to(device)
-        criterion = nn.CrossEntropyLoss(weight=loss_weights)
-    else:
-        criterion = nn.CrossEntropyLoss()
+    # if class_weights is not None:
+        # assert (
+            # len(class_weights) == train_loader.dataset.get_num_classes())
+        # logger.info('==> Using class weights for loss:')
+        # logger.info("==> {}".format(class_weights))
+        # loss_weights = torch.Tensor(class_weights)
+        # loss_weights = loss_weights.to(device)
+        # criterion = nn.CrossEntropyLoss(weight=loss_weights)
+    # else:
+        # criterion = nn.CrossEntropyLoss()
 
     # Optimizer
     # optimizer = None
