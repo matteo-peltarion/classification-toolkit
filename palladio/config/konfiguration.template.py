@@ -25,7 +25,9 @@ DATA_AUGMENTATION_LEVEL = 0
 INPUT_NORMALIZATION = None
 
 # Training hyperparameters
-BATCH_SIZE = 32
+# BATCH_SIZE = 32
+# BATCH_SIZE = 64
+BATCH_SIZE = 256
 
 # Load datasets
 train_transforms = get_data_augmentation_transforms(
@@ -35,6 +37,8 @@ train_transforms = get_data_augmentation_transforms(
 # https://github.com/zalandoresearch/fashion-mnist
 train_set = FashionMNIST(
     '.', train=True, transform=train_transforms, download=True)
+
+# Input transformation
 
 # For validation have data augmentation level set to 0 (NO DA)
 val_transforms = get_data_augmentation_transforms(
@@ -56,8 +60,72 @@ class_map_dict = {
     9: "Ankle boot",
 }
 
+# Misc
+
 # Specify loss
 criterion = CrossEntropyLoss()
+
+def print_batch_log(outputs, targets, loss, logger, batch_idx,
+                    n_batches, print_every):
+
+    STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
+
+    _, predicted = outputs.max(1)
+
+    total = targets.size(0)
+
+    correct = predicted.eq(targets).sum().item()
+
+    # Compute accuracy
+    acc = 100.*correct/total
+
+    if (batch_idx + 1) % print_every == 0:
+        logger.info(STATUS_MSG.format(
+            batch_idx+1,
+            n_batches,
+            loss/(batch_idx+1),
+            acc))
+
+    # print(outputs.size())
+    # print(targets.size())
+    # 1/0
+
+
+def build_metrics(outputs, targets):
+    """
+    Compute stats based on output and target. Returns a dictionary containing
+    all metrics that should be logged.
+
+    Parameters
+    ----------
+
+    outputs : torch.Tensor
+        The result of a forward pass of the net
+
+    target :
+        The target
+
+    Return
+    ------
+
+    dict : The aggregated metrics
+    """
+
+    # Classification problem: extract predicted labels
+    _, predicted = outputs.max(1)
+
+    total = targets.size(0)
+
+    # Compute accuracy
+    correct = predicted.eq(targets).sum().item()
+
+    acc = 100.*correct/total
+
+    metrics = dict()
+    metrics['accuracy'] = acc
+
+    return metrics
+
 
 ###################
 ####### END ####### #noqa

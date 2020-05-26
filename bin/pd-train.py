@@ -49,6 +49,7 @@ from sacred.observers import MongoObserver
 
 # global
 class_map_dict = None
+build_metrics = None
 
 ex = Experiment('FashionMNIST')
 
@@ -194,15 +195,18 @@ def train(net, train_loader, criterion, optimizer,
     net.train()
 
     train_loss = 0
-    correct = 0
-    total = 0
+    # correct = 0
+    # total = 0
 
     # Needs to be changed because of the DL sampler
     # n_batches = len(train_loader.dataset) // batch_size
     n_batches = len(train_loader)
 
-    all_targets = np.array([], dtype=int)
-    all_predicted = np.array([], dtype=int)
+    # all_targets = np.array([], dtype=int)
+    # all_predicted = np.array([], dtype=int)
+
+    all_targets = None
+    all_outputs = None
 
     for batch_idx, (inputs, targets) in enumerate(train_loader):
 
@@ -224,73 +228,92 @@ def train(net, train_loader, criterion, optimizer,
 
         train_loss += loss.item()
 
-        _, predicted = outputs.max(1)
+        print_batch_log(outputs, targets, loss.item(), logger,
+                        batch_idx, n_batches,
+                        print_every)
 
-        total += targets.size(0)
+        # Collect all target and outputs for this epoch
+        if all_outputs is None:
+            all_outputs = outputs
+        else:
+            all_outputs = torch.cat((all_outputs, outputs))
 
-        correct += predicted.eq(targets).sum().item()
+        if all_targets is None:
+            all_targets = targets
+        else:
+            all_targets = torch.cat((all_targets, targets))
 
-        # Compute accuracy
-        acc = 100.*correct/total
+        # ############
 
-        if (batch_idx + 1) % print_every == 0:
-            logger.info(STATUS_MSG.format(
-                batch_idx+1,
-                n_batches,
-                train_loss/(batch_idx+1),
-                acc))
+        # # TODO add this to parameter
+        # if (epoch + 1) % 10 == 0:
+            # # Save all for confusion matrix
+            # all_targets = np.hstack(
+                # (all_targets, targets.cpu().numpy().astype(int)))
 
-        # TODO add this to parameter
-        if (epoch + 1) % 10 == 0:
-            # Save all for confusion matrix
-            all_targets = np.hstack(
-                (all_targets, targets.cpu().numpy().astype(int)))
+            # all_predicted = np.hstack(
+                # (all_predicted, predicted.cpu().numpy().astype(int)))
 
-            all_predicted = np.hstack(
-                (all_predicted, predicted.cpu().numpy().astype(int)))
+    # if (batch_idx + 1) % print_every == 0:
+        # logger.info(STATUS_MSG.format(
+            # batch_idx+1,
+            # n_batches,
+            # train_loss/(batch_idx+1),
+            # # acc))
+            # "N/A TMP"))
 
-    # TODO add this to parameter
-    if (epoch + 1) % 10 == 0:
-        # Display confusion matrix
-        cm = confusion_matrix(all_targets, all_predicted)
+    metrics_train = build_metrics(all_outputs, all_targets)
 
-        # Save confusion matrix
-        np.save(os.path.join(exp_dir, "confusion_matrix_train_latest.npy"), cm)
+    # # TODO add this to parameter
+    # if (epoch + 1) % 10 == 0:
+        # # Display confusion matrix
+        # cm = confusion_matrix(all_targets, all_predicted)
 
-        # TODO check what happens if class_map_dict is not set (also for
-        # validation)
+        # # Save confusion matrix
+        # np.save(os.path.join(exp_dir, "confusion_matrix_train_latest.npy"), cm)
 
-        # Get detailed stats per class
-        stats_per_class = produce_per_class_stats(
-            all_targets, all_predicted, class_map_dict)
+        # # TODO check what happens if class_map_dict is not set (also for
+        # # validation)
 
-        # Add scalars corresponding to these metrics to tensorboard
-        for score in ['precision_score', 'recall_score',
-                      'roc_auc_score']:
-            for k in class_map_dict:
-                # Add scalars to tb
-                writer.add_scalar(
-                    "{}_{}_train".format(k, score),
-                    stats_per_class[k][score],
-                    epoch)
+        # # Get detailed stats per class
+        # stats_per_class = produce_per_class_stats(
+            # all_targets, all_predicted, class_map_dict)
 
-        cm_pretty = cm2df(cm, class_map_dict)
+        # # Add scalars corresponding to these metrics to tensorboard
+        # for score in ['precision_score', 'recall_score',
+                      # 'roc_auc_score']:
+            # for k in class_map_dict:
+                # # Add scalars to tb
+                # writer.add_scalar(
+                    # "{}_{}_train".format(k, score),
+                    # stats_per_class[k][score],
+                    # epoch)
 
-        print(cm_pretty)
+        # cm_pretty = cm2df(cm, class_map_dict)
 
-        # Compute balanced accuracy
-        bal_acc = balanced_accuracy_score(all_targets, all_predicted)
+        # print(cm_pretty)
 
-        writer.add_scalar("balanced_accuracy/train", bal_acc, epoch)
+        # # Compute balanced accuracy
+        # bal_acc = balanced_accuracy_score(all_targets, all_predicted)
 
-    # Add accuracy on validation set to tb
-    writer.add_scalar("accuracy/train", acc, epoch)
+        # writer.add_scalar("balanced_accuracy/train", bal_acc, epoch)
 
-    return train_loss/(batch_idx+1), acc
+    # # Add accuracy on validation set to tb
+    # writer.add_scalar("accuracy/train", acc, epoch)
+
+    # Return the average training loss per batch
+    # return train_loss/(batch_idx+1), acc
+    # return train_loss/(batch_idx+1), "N/A TMP"
+
+    # Also include training loss in metrics
+    metrics_train["loss"] = train_loss/(batch_idx+1)
+
+    return metrics_train
 
 
 def test(net, val_loader, criterion,
-         batch_size, device, epoch, logger, writer, exp_dir, best_acc):
+         # batch_size, device, epoch, logger, writer, exp_dir, best_acc):
+         batch_size, device, epoch):
     """
     Performs inference on the validation set
 
@@ -316,28 +339,12 @@ def test(net, val_loader, criterion,
 
     logger : logging.Logger
 
-    writer : torch.utils.tensorboard.SummaryWriter
-        The object used to write Tensorboard events.
-
-    exp_dir : str
-        The folder where experiment results (model and log) are saved.
-
-    best_acc : float
-        The best value for the accuracy so far obtained with the model.
-
     Returns
     -------
 
-    float
-        The loss computed on the validation set at current epoch.
+    dict
+        The metrics computed on the validation set
 
-    float
-        The accuracy of the model on the validation set at current epoch.
-
-    float
-        The best value for the accuracy so far obtained with the model.
-
-    return test_loss/(batch_idx+1), acc, best_acc
     """
 
     net.eval()
@@ -347,8 +354,11 @@ def test(net, val_loader, criterion,
     # n_batches = len(val_loader.dataset) // batch_size
     n_batches = len(val_loader)
 
-    all_targets = np.array([], dtype=int)
-    all_predicted = np.array([], dtype=int)
+    # all_targets = np.array([], dtype=int)
+    # all_predicted = np.array([], dtype=int)
+
+    all_targets = None
+    all_outputs = None
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in tqdm(
@@ -358,70 +368,61 @@ def test(net, val_loader, criterion,
             loss = criterion(outputs, targets)
 
             test_loss += loss.item()
-            _, predicted = outputs.max(1)
 
-            # TODO probably should throw away this stuff here
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
+            # Collect all target and outputs for this epoch
+            if all_outputs is None:
+                all_outputs = outputs
+            else:
+                all_outputs = torch.cat((all_outputs, outputs))
 
-            # Save all for confusion matrix
-            all_targets = np.hstack(
-                (all_targets, targets.cpu().numpy().astype(int)))
+            if all_targets is None:
+                all_targets = targets
+            else:
+                all_targets = torch.cat((all_targets, targets))
 
-            all_predicted = np.hstack(
-                (all_predicted, predicted.cpu().numpy().astype(int)))
+            # _, predicted = outputs.max(1)
 
-    # Display confusion matrix
-    cm = confusion_matrix(all_targets, all_predicted)
+            # # TODO probably should throw away this stuff here
+            # total += targets.size(0)
+            # correct += predicted.eq(targets).sum().item()
 
-    # Save confusion matrix
-    np.save(os.path.join(exp_dir, "confusion_matrix_test_latest.npy"), cm)
+            # # Save all for confusion matrix
+            # all_targets = np.hstack(
+                # (all_targets, targets.cpu().numpy().astype(int)))
 
-    # Get detailed stats per class
-    stats_per_class = produce_per_class_stats(
-        all_targets, all_predicted, class_map_dict)
+            # all_predicted = np.hstack(
+                # (all_predicted, predicted.cpu().numpy().astype(int)))
 
-    # Add scalars corresponding to these metrics to tensorboard
-    for score in ['precision_score', 'recall_score', 'roc_auc_score']:
-        for k in class_map_dict:
-            # Add scalars to tb
-            writer.add_scalar(
-                "{}_{}_val".format(k, score),
-                stats_per_class[k][score],
-                epoch)
+    metrics = build_metrics(all_outputs, all_targets)
+    metrics['loss'] = test_loss/(batch_idx+1)
 
-    cm_pretty = cm2df(cm, class_map_dict)
+    # # Display confusion matrix
+    # cm = confusion_matrix(all_targets, all_predicted)
 
-    print(cm_pretty)
+    # # Save confusion matrix
+    # np.save(os.path.join(exp_dir, "confusion_matrix_test_latest.npy"), cm)
 
-    # Save checkpoint.
-    acc = 100.*correct/total
-    state = {
-        'net': net.state_dict(),
-        'acc': acc,
-        'epoch': epoch,
-    }
+    # # Get detailed stats per class
+    # stats_per_class = produce_per_class_stats(
+        # all_targets, all_predicted, class_map_dict)
 
-    # Add accuracy on validation set to tb
-    writer.add_scalar("accuracy/val", acc, epoch)
+    # # Add scalars corresponding to these metrics to tensorboard
+    # for score in ['precision_score', 'recall_score', 'roc_auc_score']:
+        # for k in class_map_dict:
+            # # Add scalars to tb
+            # writer.add_scalar(
+                # "{}_{}_val".format(k, score),
+                # stats_per_class[k][score],
+                # epoch)
 
-    # Compute balanced accuracy
-    bal_acc = balanced_accuracy_score(all_targets, all_predicted)
+    # cm_pretty = cm2df(cm, class_map_dict)
 
-    writer.add_scalar("balanced_accuracy/val", bal_acc, epoch)
+    # print(cm_pretty)
 
-    # Display accuracy
-    logger.info("Accuracy on validation set after epoch {}: {}".format(
-        epoch+1, acc))
 
-    if acc > best_acc:
-        logger.info('Saving..')
-        save_checkpoint(state, exp_dir, backup_as_best=True)
-        best_acc = acc
-    else:
-        save_checkpoint(state, exp_dir, backup_as_best=False)
-
-    return test_loss/(batch_idx+1), acc, best_acc
+    # return test_loss/(batch_idx+1), acc, best_acc
+    # return test_loss/(batch_idx+1), ""
+    return metrics
 
 
 @ex.automain
@@ -507,10 +508,16 @@ def main(network_name,
     num_classes = konfiguration.num_classes
     criterion = konfiguration.criterion
 
-    _class_map_dict = konfiguration.class_map_dict
+    # _class_map_dict = konfiguration.class_map_dict
 
     global class_map_dict
-    class_map_dict = _class_map_dict
+    global build_metrics
+    global print_batch_log
+
+    # class_map_dict = _class_map_dict
+    class_map_dict = konfiguration.class_map_dict
+    build_metrics = konfiguration.build_metrics
+    print_batch_log = konfiguration.print_batch_log
 
     # Model.
     logger.info('==> Building model..')
@@ -534,7 +541,7 @@ def main(network_name,
         checkpoint = torch.load(
             os.path.join(exp_dir, "model_latest.pth.tar"))
         net.load_state_dict(checkpoint['net'])
-        best_acc = checkpoint['acc']
+        # best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch'] + 1
     else:
         best_acc = 0
@@ -580,7 +587,8 @@ def main(network_name,
             gamma=scheduler_gamma)  # default: 0.1
             # gamma=0.3162)  # sqrt(0.1)
 
-    epochs, train_losses, test_losses = [], [], []
+    # epochs, train_losses, test_losses = [], [], []
+    epochs = []
 
     # Keep an eye on how long it takes to train for one epoch
     times_train = list()
@@ -629,6 +637,8 @@ def main(network_name,
     # for epoch in range(start_epoch, args.num_epochs):
     for epoch in range(start_epoch, num_epochs):
 
+        metrics = dict()
+
         tic = time.time()
 
         # Print the experiment name at the beginning of every loop
@@ -639,19 +649,19 @@ def main(network_name,
             logger.info('Learning rate: {}'.format(param_group['lr']))
 
         # Train for one epoch
-        train_loss, train_acc = train(
+        # train_loss, train_acc = train(
+        metrics_train = train(
             net, train_loader, criterion, optimizer,
             batch_size, device, epoch, logger, writer, exp_dir)
 
-        toc = time.time()
+        # Save metrics on training set
+        metrics['train'] = metrics_train
 
-        # Log metrics
-        ex.log_scalar("training.loss", train_loss, epoch)
-        ex.log_scalar("training.accuracy", train_acc, epoch)
+        toc = time.time()
 
         dt_train = toc - tic
         times_train.append(dt_train)
-        train_losses.append(train_loss)
+        # train_losses.append(train_loss)
 
         logger.info("Training for epoch {} took {} s.".format(
             epoch+1, dt_train))
@@ -660,19 +670,17 @@ def main(network_name,
         tic = toc
 
         # Test results
-        test_loss, test_acc, best_acc = test(
+        # test_loss, test_acc, best_acc = test(
+        metrics_val = test(
             net, val_loader, criterion,
-            batch_size, device, epoch,
-            logger, writer, exp_dir, best_acc)
+            batch_size, device, epoch)
+
+        metrics['val'] = metrics_val
 
         toc = time.time()
 
-        # Log metrics
-        ex.log_scalar("validation.loss", test_loss, epoch)
-        ex.log_scalar("validation.accuracy", test_acc, epoch)
-
         dt_val = toc - tic
-        test_losses.append(test_loss)
+        # test_losses.append(test_loss)
         times_val.append(dt_val)
 
         logger.info("Validation for epoch {} took {} s.".format(
@@ -699,24 +707,66 @@ def main(network_name,
 
         logger.info("ETA: {}".format(eta.strftime("%d/%m/%Y %H:%M:%S")))
 
+        # # Save checkpoint.
+        # acc = 100.*correct/total
+        state = {
+            'net': net.state_dict(),
+            # 'acc': acc,
+            'epoch': epoch,
+        }
+
+        # # Add accuracy on validation set to tb
+        # writer.add_scalar("accuracy/val", acc, epoch)
+
+        # # Compute balanced accuracy
+        # bal_acc = balanced_accuracy_score(all_targets, all_predicted)
+
+        # writer.add_scalar("balanced_accuracy/val", bal_acc, epoch)
+
+        # # Display accuracy
+        # logger.info("Accuracy on validation set after epoch {}: {}".format(
+            # epoch+1, acc))
+
+        # TODO reenable this
+        # if acc > best_acc:
+        if False:
+            logger.info('Saving..')
+            save_checkpoint(state, exp_dir, backup_as_best=True)
+            # best_acc = acc
+        else:
+            save_checkpoint(state, exp_dir, backup_as_best=False)
+
+        for subset in ['train', 'val']:
+            for metric, v in metrics[subset].items():
+
+                ex.log_scalar("{subset}.{metrics}", v, epoch)
+
+        # Log metrics
+        # ex.log_scalar("training.loss", train_loss, epoch)
+        # ex.log_scalar("training.accuracy", train_acc, epoch)
+
+        # ex.log_scalar("validation.loss", test_loss, epoch)
+        # ex.log_scalar("validation.accuracy", test_acc, epoch)
+
         # Add scalars to tb
         # Loss
-        writer.add_scalars(
-            'Loss', {
-                'train': train_loss,
-                'val': test_loss},
-            epoch)
+        # writer.add_scalars(
+            # 'Loss', {
+                # 'train': train_loss,
+                # 'val': test_loss},
+            # epoch)
 
-        # Accuracy
-        writer.add_scalars(
-            'Accuracy', {
-                'train': train_acc,
-                'val': test_acc},
-            epoch)
+        # # Accuracy
+        # writer.add_scalars(
+            # 'Accuracy', {
+                # 'train': train_acc,
+                # 'val': test_acc},
+            # epoch)
 
-        create_loss_plot(exp_dir, epochs, train_losses, test_losses)
+        # TODO probably old code which can be deleted
+        # create_loss_plot(exp_dir, epochs, train_losses, test_losses)
 
-        np.save(npy_file, [train_losses, test_losses])
+        # np.save(npy_file, [train_losses, test_losses])
 
         lr_scheduler.step()
 
