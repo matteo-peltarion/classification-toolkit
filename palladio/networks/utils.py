@@ -16,8 +16,8 @@ def get_network(network_name, num_classes, use_pretrained):
         net.fc = nn.Linear(2048, num_classes)
 
         # TODO network specific, move somewhere else
-        net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
-                              bias=False)
+        # net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
+                              # bias=False)
 
     return net
 
