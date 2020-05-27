@@ -228,7 +228,7 @@ def train(net, train_loader, criterion, optimizer,
 
         print_batch_log(outputs, targets, loss.item(), logger,
                         batch_idx, n_batches,
-                        print_every)
+                        print_every, 'TRAINING')
 
         # Collect all target and outputs for this epoch
         if all_outputs is None:
@@ -251,7 +251,7 @@ def train(net, train_loader, criterion, optimizer,
 
 def test(net, val_loader, criterion,
          # batch_size, device, epoch, logger, writer, exp_dir, best_acc):
-         batch_size, device, epoch):
+         logger, batch_size, device, epoch):
     """
     Performs inference on the validation set
 
@@ -335,6 +335,10 @@ def test(net, val_loader, criterion,
 
     metrics = build_metrics(all_outputs, all_targets)
     metrics['loss'] = test_loss/(batch_idx+1)
+
+    print_batch_log(all_outputs, all_targets, loss.item(), logger,
+                    batch_idx, n_batches,
+                    1, 'VALIDATION')  # Always print
 
     # # Display confusion matrix
     # cm = confusion_matrix(all_targets, all_predicted)
@@ -603,7 +607,7 @@ def main(network_name,
         # Test results
         metrics_val = test(
             net, val_loader, criterion,
-            batch_size, device, epoch)
+            logger, batch_size, device, epoch)
 
         metrics['val'] = metrics_val
 
@@ -687,6 +691,7 @@ def main(network_name,
                 # 'val': test_acc},
             # epoch)
 
+        logger.info(40*"=")
         lr_scheduler.step()
 
     # Keep track of how much the whole experiment lasts

@@ -103,17 +103,18 @@ def build_metrics(outputs, targets):
 
 
 def print_batch_log(outputs, targets, loss, logger, batch_idx,
-                    n_batches, print_every):
+                    n_batches, print_every, subset):
 
     """
     Outputs are logits, targets
     """
-    STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | F1 (micro): {:04f} | F1 (macro): {:04f}"  # noqa
+    STATUS_MSG = "[{}] Batches done: {}/{} | Loss: {:04f} | F1 (micro): {:04f} | F1 (macro): {:04f}"  # noqa
 
     metrics = build_metrics(outputs, targets)
 
     if (batch_idx + 1) % print_every == 0:
         logger.info(STATUS_MSG.format(
+            subset,
             batch_idx+1,
             n_batches,
             loss/(batch_idx+1),

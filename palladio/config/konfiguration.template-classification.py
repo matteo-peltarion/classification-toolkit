@@ -62,9 +62,9 @@ criterion = CrossEntropyLoss()
 
 
 def print_batch_log(outputs, targets, loss, logger, batch_idx,
-                    n_batches, print_every):
+                    n_batches, print_every, subset):
 
-    STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
+    STATUS_MSG = "[{}] Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
 
     _, predicted = outputs.max(1)
 
@@ -77,6 +77,7 @@ def print_batch_log(outputs, targets, loss, logger, batch_idx,
 
     if (batch_idx + 1) % print_every == 0:
         logger.info(STATUS_MSG.format(
+            subset,
             batch_idx+1,
             n_batches,
             loss/(batch_idx+1),
