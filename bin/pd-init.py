@@ -17,7 +17,7 @@ def parse_args():
         "destination_file", nargs='?', default="konfiguration.py")
 
     parser.add_argument('--task', default='classification',
-                        choices=['classification', 'mlc']
+                        choices=['classification', 'mlc'],
                         help='Task: classification, multi-label classification (mlc)')  # noqa
 
     return parser.parse_args()
