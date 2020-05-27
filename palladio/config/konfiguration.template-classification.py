@@ -1,6 +1,6 @@
-# Experiment specific imports
-# from lib.dataset.peltarion import Peltarion
-# import os
+"""
+Konfiguration template file for image classification task
+"""
 
 from torchvision.datasets import FashionMNIST
 
@@ -65,6 +65,7 @@ class_map_dict = {
 # Specify loss
 criterion = CrossEntropyLoss()
 
+
 def print_batch_log(outputs, targets, loss, logger, batch_idx,
                     n_batches, print_every):
 
@@ -85,10 +86,6 @@ def print_batch_log(outputs, targets, loss, logger, batch_idx,
             n_batches,
             loss/(batch_idx+1),
             acc))
-
-    # print(outputs.size())
-    # print(targets.size())
-    # 1/0
 
 
 def build_metrics(outputs, targets):

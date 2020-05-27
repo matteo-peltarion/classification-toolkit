@@ -16,6 +16,10 @@ def parse_args():
     parser.add_argument(
         "destination_file", nargs='?', default="konfiguration.py")
 
+    parser.add_argument('--task', default='classification',
+                        choices=['classification', 'mlc']
+                        help='Task: classification, multi-label classification (mlc)')  # noqa
+
     return parser.parse_args()
 
 
@@ -25,7 +29,7 @@ def main():
 
     template_file = os.path.join(
         os.path.dirname(palladio.__file__),
-        "config", "konfiguration.template.py")
+        "config", f"konfiguration.template-{args.task}.py")
 
     proceed = True
 
