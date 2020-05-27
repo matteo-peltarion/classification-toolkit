@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 
 import logging
 
-# import argparse
-
 from tqdm import tqdm
 
 import matplotlib
@@ -20,18 +18,11 @@ matplotlib.use('agg')
 
 import matplotlib.pyplot as plt
 
-# from sklearn.metrics import confusion_matrix, balanced_accuracy_score
-
-# import numpy as np
-
 # Torch stuff
 import torch.optim as optim
 # import torch.nn as nn
 
-from torch.utils.tensorboard import SummaryWriter
-
 import torch
-# import torch.backends.cudnn as cudnn
 
 from palladio.networks.utils import get_network
 
@@ -49,7 +40,15 @@ from sacred.observers import MongoObserver
 class_map_dict = None
 build_metrics = None
 
-ex = Experiment('FashionMNIST')
+spec = importlib.util.spec_from_file_location(
+    "konfiguration",
+    "konfiguration.py")
+konfiguration = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(konfiguration)
+
+EXPERIMENT_NAME = konfiguration.EXPERIMENT_NAME
+
+ex = Experiment(EXPERIMENT_NAME)
 
 # Format of status message
 STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
@@ -181,7 +180,7 @@ def get_info(_run):
 
 # Training.
 def train(net, train_loader, criterion, optimizer,
-          batch_size, device, epoch, logger, writer, exp_dir,
+          batch_size, device, epoch, logger, exp_dir,
           print_every=50):
     """Performs training for one epoch
 
@@ -457,9 +456,9 @@ def main(network_name,
     # writer = SummaryWriter(
         # log_dir="tb_logs/"+args.exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
         # comment=args.exp_name)
-    writer = SummaryWriter(
-        log_dir="tb_logs/"+exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
-        comment=exp_name)
+    # writer = SummaryWriter(
+        # log_dir="tb_logs/"+exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
+        # comment=exp_name)
 
     # Logging
     logger = logging.getLogger(__name__)
@@ -493,12 +492,6 @@ def main(network_name,
 
     # Initialize datasets and loaders.
     logger.info('==> Preparing data..')
-
-    spec = importlib.util.spec_from_file_location(
-        "konfiguration",
-        "konfiguration.py")
-    konfiguration = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(konfiguration)
 
     # Import experiment specific stuff
     # from konfiguration import (
@@ -640,9 +633,12 @@ def main(network_name,
 
         # Train for one epoch
         # train_loss, train_acc = train(
+        # metrics_train = train(
+            # net, train_loader, criterion, optimizer,
+            # batch_size, device, epoch, logger, writer, exp_dir)
         metrics_train = train(
             net, train_loader, criterion, optimizer,
-            batch_size, device, epoch, logger, writer, exp_dir)
+            batch_size, device, epoch, logger, exp_dir)
 
         # Save metrics on training set
         metrics['train'] = metrics_train
@@ -758,7 +754,7 @@ def main(network_name,
     logger.info("Elapsed time: {}".format(
         timedelta(seconds=int(experiment_end - experiment_start))))
 
-    writer.close()
+    # writer.close()
 
     # Final value
     # return best_acc

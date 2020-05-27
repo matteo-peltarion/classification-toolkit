@@ -18,6 +18,8 @@ from torch.nn import CrossEntropyLoss
 ####### Settings ####### #noqa
 ########################
 
+EXPERIMENT_NAME = "FashionMNIST"
+
 # Dataset
 
 # Data augmentation/transformation
