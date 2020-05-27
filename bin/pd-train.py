@@ -24,6 +24,8 @@ import torch.optim as optim
 
 import torch
 
+from torch.utils.data.dataloader import DataLoader
+
 from palladio.networks.utils import get_network
 
 # from lib.utils import (
@@ -40,6 +42,7 @@ from sacred.observers import MongoObserver
 class_map_dict = None
 build_metrics = None
 
+# Load custom configuration
 spec = importlib.util.spec_from_file_location(
     "konfiguration",
     "konfiguration.py")
@@ -238,68 +241,7 @@ def train(net, train_loader, criterion, optimizer,
         else:
             all_targets = torch.cat((all_targets, targets))
 
-        # ############
-
-        # # TODO add this to parameter
-        # if (epoch + 1) % 10 == 0:
-            # # Save all for confusion matrix
-            # all_targets = np.hstack(
-                # (all_targets, targets.cpu().numpy().astype(int)))
-
-            # all_predicted = np.hstack(
-                # (all_predicted, predicted.cpu().numpy().astype(int)))
-
-    # if (batch_idx + 1) % print_every == 0:
-        # logger.info(STATUS_MSG.format(
-            # batch_idx+1,
-            # n_batches,
-            # train_loss/(batch_idx+1),
-            # # acc))
-            # "N/A TMP"))
-
     metrics_train = build_metrics(all_outputs, all_targets)
-
-    # # TODO add this to parameter
-    # if (epoch + 1) % 10 == 0:
-        # # Display confusion matrix
-        # cm = confusion_matrix(all_targets, all_predicted)
-
-        # # Save confusion matrix
-        # np.save(os.path.join(
-            # exp_dir, "confusion_matrix_train_latest.npy"), cm)
-
-        # # TODO check what happens if class_map_dict is not set (also for
-        # # validation)
-
-        # # Get detailed stats per class
-        # stats_per_class = produce_per_class_stats(
-            # all_targets, all_predicted, class_map_dict)
-
-        # # Add scalars corresponding to these metrics to tensorboard
-        # for score in ['precision_score', 'recall_score',
-                      # 'roc_auc_score']:  # noqa
-            # for k in class_map_dict:
-                # # Add scalars to tb
-                # writer.add_scalar(
-                    # "{}_{}_train".format(k, score),
-                    # stats_per_class[k][score],
-                    # epoch)
-
-        # cm_pretty = cm2df(cm, class_map_dict)
-
-        # print(cm_pretty)
-
-        # # Compute balanced accuracy
-        # bal_acc = balanced_accuracy_score(all_targets, all_predicted)
-
-        # writer.add_scalar("balanced_accuracy/train", bal_acc, epoch)
-
-    # # Add accuracy on validation set to tb
-    # writer.add_scalar("accuracy/train", acc, epoch)
-
-    # Return the average training loss per batch
-    # return train_loss/(batch_idx+1), acc
-    # return train_loss/(batch_idx+1), "N/A TMP"
 
     # Also include training loss in metrics
     metrics_train["loss"] = train_loss/(batch_idx+1)
@@ -495,9 +437,17 @@ def main(network_name,
     # from konfiguration import (
         # train_loader, val_loader, num_classes, _class_map_dict)
 
-    # Manually load stuf from konfiguration
-    train_loader = konfiguration.train_loader
-    val_loader = konfiguration.val_loader
+    # Build train and validation loader
+    train_loader = DataLoader(konfiguration.train_set,
+                              batch_size=batch_size,
+                              sampler=konfiguration.train_sampler,
+                              num_workers=6)
+
+    val_loader = DataLoader(konfiguration.val_set,
+                            batch_size=batch_size,
+                            sampler=konfiguration.val_sampler,
+                            num_workers=6)
+
     num_classes = konfiguration.num_classes
     criterion = konfiguration.criterion
 
@@ -630,10 +580,6 @@ def main(network_name,
             logger.info('Learning rate: {}'.format(param_group['lr']))
 
         # Train for one epoch
-        # train_loss, train_acc = train(
-        # metrics_train = train(
-            # net, train_loader, criterion, optimizer,
-            # batch_size, device, epoch, logger, writer, exp_dir)
         metrics_train = train(
             net, train_loader, criterion, optimizer,
             batch_size, device, epoch, logger, exp_dir)
@@ -645,6 +591,7 @@ def main(network_name,
 
         dt_train = toc - tic
         times_train.append(dt_train)
+        # TODO save metrics for later and create artifact
         # train_losses.append(train_loss)
 
         logger.info("Training for epoch {} took {} s.".format(
@@ -654,7 +601,6 @@ def main(network_name,
         tic = toc
 
         # Test results
-        # test_loss, test_acc, best_acc = test(
         metrics_val = test(
             net, val_loader, criterion,
             batch_size, device, epoch)

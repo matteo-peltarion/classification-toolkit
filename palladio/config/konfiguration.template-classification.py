@@ -7,8 +7,6 @@ from torchvision.datasets import FashionMNIST
 # from lib.utils import get_data_augmentation_transforms
 from palladio.utils import get_data_augmentation_transforms
 
-from torch.utils.data.dataloader import DataLoader
-
 # from torch.utils.data import WeightedRandomSampler, RandomSampler
 from torch.utils.data import RandomSampler
 
@@ -25,11 +23,6 @@ EXPERIMENT_NAME = "FashionMNIST"
 # Data augmentation/transformation
 DATA_AUGMENTATION_LEVEL = 0
 INPUT_NORMALIZATION = None
-
-# Training hyperparameters
-# BATCH_SIZE = 32
-# BATCH_SIZE = 64
-BATCH_SIZE = 256
 
 # Load datasets
 train_transforms = get_data_augmentation_transforms(
@@ -123,6 +116,44 @@ def build_metrics(outputs, targets):
     metrics = dict()
     metrics['accuracy'] = acc
 
+    # # TODO add this to parameter
+    # if (epoch + 1) % 10 == 0:
+        # # Display confusion matrix
+        # cm = confusion_matrix(all_targets, all_predicted)
+
+        # # Save confusion matrix
+        # np.save(os.path.join(
+            # exp_dir, "confusion_matrix_train_latest.npy"), cm)
+
+        # # TODO check what happens if class_map_dict is not set (also for
+        # # validation)
+
+        # # Get detailed stats per class
+        # stats_per_class = produce_per_class_stats(
+            # all_targets, all_predicted, class_map_dict)
+
+        # # Add scalars corresponding to these metrics to tensorboard
+        # for score in ['precision_score', 'recall_score',
+                      # 'roc_auc_score']:  # noqa
+            # for k in class_map_dict:
+                # # Add scalars to tb
+                # writer.add_scalar(
+                    # "{}_{}_train".format(k, score),
+                    # stats_per_class[k][score],
+                    # epoch)
+
+        # cm_pretty = cm2df(cm, class_map_dict)
+
+        # print(cm_pretty)
+
+        # # Compute balanced accuracy
+        # bal_acc = balanced_accuracy_score(all_targets, all_predicted)
+
+        # writer.add_scalar("balanced_accuracy/train", bal_acc, epoch)
+
+    # # Add accuracy on validation set to tb
+    # writer.add_scalar("accuracy/train", acc, epoch)
+
     return metrics
 
 
@@ -144,17 +175,6 @@ def build_metrics(outputs, targets):
 
 train_sampler = RandomSampler(train_set)
 val_sampler = RandomSampler(val_set)
-
-# Use custom sampler for train_loader
-train_loader = DataLoader(train_set,
-                          batch_size=BATCH_SIZE,
-                          sampler=train_sampler,
-                          num_workers=6)
-
-val_loader = DataLoader(val_set,
-                        batch_size=BATCH_SIZE,
-                        sampler=val_sampler,
-                        num_workers=6)
 
 # Specify number of classes
 num_classes = len(class_map_dict)

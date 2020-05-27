@@ -5,8 +5,6 @@ Konfiguration template file for image classification task
 # from lib.utils import get_data_augmentation_transforms
 from palladio.utils import get_data_augmentation_transforms
 
-from torch.utils.data.dataloader import DataLoader
-
 # from torch.utils.data import WeightedRandomSampler, RandomSampler
 from torch.utils.data import RandomSampler
 
@@ -25,11 +23,6 @@ EXPERIMENT_NAME = "FashionMNIST"
 # Data augmentation/transformation
 DATA_AUGMENTATION_LEVEL = 0
 INPUT_NORMALIZATION = None
-
-# Training hyperparameters
-# BATCH_SIZE = 32
-# BATCH_SIZE = 64
-BATCH_SIZE = 256
 
 # Load datasets
 train_transforms = get_data_augmentation_transforms(
@@ -146,17 +139,6 @@ def print_batch_log(outputs, targets, loss, logger, batch_idx,
 
 train_sampler = RandomSampler(train_set)
 val_sampler = RandomSampler(val_set)
-
-# Use custom sampler for train_loader
-train_loader = DataLoader(train_set,
-                          batch_size=BATCH_SIZE,
-                          sampler=train_sampler,
-                          num_workers=6)
-
-val_loader = DataLoader(val_set,
-                        batch_size=BATCH_SIZE,
-                        sampler=val_sampler,
-                        num_workers=6)
 
 # Specify number of classes
 num_classes = None
