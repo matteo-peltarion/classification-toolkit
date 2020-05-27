@@ -50,9 +50,6 @@ EXPERIMENT_NAME = konfiguration.EXPERIMENT_NAME
 
 ex = Experiment(EXPERIMENT_NAME)
 
-# Format of status message
-STATUS_MSG = "Batches done: {}/{} | Loss: {:04f} | Accuracy: {:04f}"
-
 ex.observers.append(MongoObserver(
     url='mongodb://sample:password@localhost/?authMechanism=SCRAM-SHA-1',
     db_name='db'))
@@ -67,7 +64,7 @@ def config():
 
     network_name = 'resnet50'  # noqa
 
-    num_epochs = 2  # noqa
+    num_epochs = 3  # noqa
 
     use_pretrained = False  # noqa
 
@@ -85,12 +82,12 @@ def config():
     weight_decay = 0  # noqa
 
 
-@ex.capture
-def get_info(_run):
-    # print(_run._id)
-    # print(_run.experiment_info["name"])
+# @ex.capture
+# def get_info(_run):
+    # # print(_run._id)
+    # # print(_run.experiment_info["name"])
 
-    return _run.experiment_info["name"]
+    # return _run.experiment_info["name"]
 
 
 # def parse_args():
@@ -445,7 +442,8 @@ def main(network_name,
         Explanation for parameter test
     """
 
-    exp_name = get_info()
+    # exp_name = get_info()
+    exp_name = EXPERIMENT_NAME
 
     # exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
     exp_dir = os.path.join('experiments', '{}'.format(exp_name))
@@ -726,7 +724,7 @@ def main(network_name,
         for subset in ['train', 'val']:
             for metric, v in metrics[subset].items():
 
-                ex.log_scalar(f"{subset}.{metrics}", v, epoch)
+                ex.log_scalar(f"{subset}.{metric}", v, epoch+1)
 
         # Add scalars to tb
         # Loss
