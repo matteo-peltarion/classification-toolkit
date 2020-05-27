@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 import logging
 
-import argparse
+# import argparse
 
 from tqdm import tqdm
 
@@ -20,13 +20,13 @@ matplotlib.use('agg')
 
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import confusion_matrix, balanced_accuracy_score
+# from sklearn.metrics import confusion_matrix, balanced_accuracy_score
 
-import numpy as np
+# import numpy as np
 
 # Torch stuff
 import torch.optim as optim
-import torch.nn as nn
+# import torch.nn as nn
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -36,9 +36,7 @@ import torch
 from palladio.networks.utils import get_network
 
 # from lib.utils import (
-from palladio.utils import (
-    save_checkpoint, create_loss_plot, cm2df,
-    produce_per_class_stats)
+from palladio.utils import save_checkpoint
 
 # Required for loading configuration dynamically
 import importlib.util
@@ -146,7 +144,8 @@ def get_info(_run):
     # parser.add_argument('--network', default='resnet50',
                         # choices=[
                             # 'SimpleCNN', 'VGG16', 'Alexnet',
-                            # 'resnet34', 'resnet50', 'resnet101', 'resnet152'],
+                            # 'resnet34', 'resnet50', 'resnet101',
+                            # 'resnet152'],
                         # help='network architecture')
 
     # parser.add_argument('--use-pretrained',
@@ -270,7 +269,8 @@ def train(net, train_loader, criterion, optimizer,
         # cm = confusion_matrix(all_targets, all_predicted)
 
         # # Save confusion matrix
-        # np.save(os.path.join(exp_dir, "confusion_matrix_train_latest.npy"), cm)
+        # np.save(os.path.join(
+            # exp_dir, "confusion_matrix_train_latest.npy"), cm)
 
         # # TODO check what happens if class_map_dict is not set (also for
         # # validation)
@@ -281,7 +281,7 @@ def train(net, train_loader, criterion, optimizer,
 
         # # Add scalars corresponding to these metrics to tensorboard
         # for score in ['precision_score', 'recall_score',
-                      # 'roc_auc_score']:
+                      # 'roc_auc_score']:  # noqa
             # for k in class_map_dict:
                 # # Add scalars to tb
                 # writer.add_scalar(
@@ -349,8 +349,10 @@ def test(net, val_loader, criterion,
 
     net.eval()
     test_loss = 0
-    correct = 0
-    total = 0
+
+    # correct = 0
+    # total = 0
+
     # n_batches = len(val_loader.dataset) // batch_size
     n_batches = len(val_loader)
 
@@ -419,7 +421,6 @@ def test(net, val_loader, criterion,
 
     # print(cm_pretty)
 
-
     # return test_loss/(batch_idx+1), acc, best_acc
     # return test_loss/(batch_idx+1), ""
     return metrics
@@ -480,7 +481,8 @@ def main(network_name,
         device = 'cpu'
         logger.info('==> CUDA unavailable, Running on CPU :(')
 
-    npy_file = os.path.join(exp_dir, 'final_results.npy')
+    # TODO possibly remove
+    # npy_file = os.path.join(exp_dir, 'final_results.npy')
 
     # XXX unnecessary, since everything should be saved by sacred
     # Dump arguments in text file inside the experiment folder
@@ -544,22 +546,10 @@ def main(network_name,
         # best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch'] + 1
     else:
-        best_acc = 0
+        # best_acc = 0
         start_epoch = 0
 
     net = net.to(device)
-
-    # Define the loss
-    # if class_weights is not None:
-        # assert (
-            # len(class_weights) == train_loader.dataset.get_num_classes())
-        # logger.info('==> Using class weights for loss:')
-        # logger.info("==> {}".format(class_weights))
-        # loss_weights = torch.Tensor(class_weights)
-        # loss_weights = loss_weights.to(device)
-        # criterion = nn.CrossEntropyLoss(weight=loss_weights)
-    # else:
-        # criterion = nn.CrossEntropyLoss()
 
     # Optimizer
     # optimizer = None
@@ -736,17 +726,11 @@ def main(network_name,
         else:
             save_checkpoint(state, exp_dir, backup_as_best=False)
 
+        # Log all metrics in sacred
         for subset in ['train', 'val']:
             for metric, v in metrics[subset].items():
 
-                ex.log_scalar("{subset}.{metrics}", v, epoch)
-
-        # Log metrics
-        # ex.log_scalar("training.loss", train_loss, epoch)
-        # ex.log_scalar("training.accuracy", train_acc, epoch)
-
-        # ex.log_scalar("validation.loss", test_loss, epoch)
-        # ex.log_scalar("validation.accuracy", test_acc, epoch)
+                ex.log_scalar(f"{subset}.{metrics}", v, epoch)
 
         # Add scalars to tb
         # Loss
@@ -763,11 +747,6 @@ def main(network_name,
                 # 'val': test_acc},
             # epoch)
 
-        # TODO probably old code which can be deleted
-        # create_loss_plot(exp_dir, epochs, train_losses, test_losses)
-
-        # np.save(npy_file, [train_losses, test_losses])
-
         lr_scheduler.step()
 
     # Keep track of how much the whole experiment lasts
@@ -782,7 +761,7 @@ def main(network_name,
     writer.close()
 
     # Final value
-    return best_acc
+    # return best_acc
 
 
 # XXX this is no longer used with sacred
