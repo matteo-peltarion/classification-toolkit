@@ -85,14 +85,6 @@ def config():
     weight_decay = 0  # noqa
 
 
-# @ex.capture
-# def get_info(_run):
-    # # print(_run._id)
-    # # print(_run.experiment_info["name"])
-
-    # return _run.experiment_info["name"]
-
-
 # def parse_args():
 
     # # Parse args.
@@ -388,7 +380,6 @@ def main(network_name,
         Explanation for parameter test
     """
 
-    # exp_name = get_info()
     exp_name = EXPERIMENT_NAME
 
     # exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
