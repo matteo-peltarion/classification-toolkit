@@ -63,13 +63,13 @@ def config():
 
     batch_size = 4  # noqa
 
-    lr = 0.001  # noqa
+    lr = 0.0001  # noqa
 
     network_name = 'resnet50'  # noqa
 
-    num_epochs = 3  # noqa
+    num_epochs = 10  # noqa
 
-    use_pretrained = False  # noqa
+    use_pretrained = True  # noqa
 
     # optimizer = optim.Adam(
         # net.parameters(), lr=lr, weight_decay=weight_decay)
