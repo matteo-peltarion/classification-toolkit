@@ -10,7 +10,8 @@ from torch.utils.data import RandomSampler
 
 from torch.nn import BCEWithLogitsLoss
 
-from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.metrics import (
+    precision_score, recall_score, f1_score, accuracy_score)
 
 ########################
 ####### Settings ####### #noqa
@@ -41,6 +42,8 @@ val_transforms = get_data_augmentation_transforms(
 
 # XXX Set validation dataset here
 val_set = None
+
+class_map_dict = None
 
 # class_map_dict = {
     # 0: "T-shirt/top",
@@ -84,9 +87,6 @@ def build_metrics(outputs, targets):
     # Classification problem: extract predicted labels
     predicted = (outputs > 0.5).int()
 
-    # total = targets.size(0)
-    # acc = 100.*correct/total
-
     metrics_functions = {
         'precision': precision_score,
         'recall': recall_score,
@@ -98,6 +98,21 @@ def build_metrics(outputs, targets):
     for m, mf in metrics_functions.items():
         for avg in ['micro', 'macro']:
             metrics[f'{m}_{avg}'] = mf(targets, predicted, average=avg)
+
+    if class_map_dict is not None:
+
+        # Add accuracy to metrics
+        metrics_functions['accuracy'] = accuracy_score
+
+        # Per class metrics
+        for i, c in class_map_dict.items():
+
+            # Sanitize name of the class
+            cc = c.lower().replace(" ", "_")
+
+            for m, mf in metrics_functions.items():
+                metrics[f'{m}_{cc}'] = mf(
+                    targets[:, i].cpu(), predicted[:, i].cpu())
 
     return metrics
 
