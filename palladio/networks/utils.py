@@ -9,15 +9,16 @@ from torchvision.models.resnet import (  # noqa
 import torch.nn as nn
 
 
-def get_network(network_name, num_classes, use_pretrained):
+def get_network(network_name, num_classes, use_pretrained, n_input_channels=3):
 
     if network_name == 'resnet50':
         net = resnet50(pretrained=use_pretrained)
         net.fc = nn.Linear(2048, num_classes)
 
-        # TODO network specific, move somewhere else
-        # net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
-                              # bias=False)
+        if n_input_channels != 3:
+            net.conv1 = nn.Conv2d(
+                n_input_channels, 64, kernel_size=7, stride=2, padding=3,
+                bias=False)
 
     return net
 
@@ -30,7 +31,7 @@ def get_network(network_name, num_classes, use_pretrained):
 
         # # TODO network specific, move somewhere else
         # net.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
-                              # bias=False)
+                              # bias=False)  # noqa
 
     # elif args.network == 'Alexnet':
         # net = alexnet(pretrained=args.use_pretrained)
