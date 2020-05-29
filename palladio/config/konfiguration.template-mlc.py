@@ -8,6 +8,8 @@ from palladio.utils import get_data_augmentation_transforms
 # from torch.utils.data import WeightedRandomSampler, RandomSampler
 from torch.utils.data import RandomSampler
 
+from palladio.networks.utils import get_network as pd_get_network
+
 from torch.nn import BCEWithLogitsLoss
 
 from sklearn.metrics import (
@@ -158,3 +160,7 @@ val_sampler = RandomSampler(val_set)
 
 # Specify number of classes
 num_classes = None
+
+
+def get_network(network_name, use_pretrained):
+    return pd_get_network(network_name, num_classes, use_pretrained)

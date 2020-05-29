@@ -7,6 +7,8 @@ from torchvision.datasets import FashionMNIST
 # from lib.utils import get_data_augmentation_transforms
 from palladio.utils import get_data_augmentation_transforms
 
+from palladio.networks.utils import get_network as pd_get_network
+
 # from torch.utils.data import WeightedRandomSampler, RandomSampler
 from torch.utils.data import RandomSampler
 
@@ -179,3 +181,7 @@ val_sampler = RandomSampler(val_set)
 
 # Specify number of classes
 num_classes = len(class_map_dict)
+
+
+def get_network(network_name, use_pretrained):
+    return pd_get_network(network_name, num_classes, use_pretrained)

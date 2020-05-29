@@ -26,8 +26,6 @@ import torch
 
 from torch.utils.data.dataloader import DataLoader
 
-from palladio.networks.utils import get_network
-
 # from lib.utils import (
 from palladio.utils import save_checkpoint
 
@@ -280,14 +278,7 @@ def test(net, val_loader, criterion,
     net.eval()
     test_loss = 0
 
-    # correct = 0
-    # total = 0
-
-    # n_batches = len(val_loader.dataset) // batch_size
     n_batches = len(val_loader)
-
-    # all_targets = np.array([], dtype=int)
-    # all_predicted = np.array([], dtype=int)
 
     all_targets = None
     all_outputs = None
@@ -311,19 +302,6 @@ def test(net, val_loader, criterion,
                 all_targets = targets
             else:
                 all_targets = torch.cat((all_targets, targets))
-
-            # _, predicted = outputs.max(1)
-
-            # # TODO probably should throw away this stuff here
-            # total += targets.size(0)
-            # correct += predicted.eq(targets).sum().item()
-
-            # # Save all for confusion matrix
-            # all_targets = np.hstack(
-                # (all_targets, targets.cpu().numpy().astype(int)))
-
-            # all_predicted = np.hstack(
-                # (all_predicted, predicted.cpu().numpy().astype(int)))
 
     metrics = build_metrics(all_outputs, all_targets)
     metrics['loss'] = test_loss/(batch_idx+1)
@@ -383,7 +361,8 @@ def main(network_name,
     exp_name = EXPERIMENT_NAME
 
     # exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
-    exp_dir = os.path.join('experiments', '{}'.format(exp_name))
+    exp_dir = os.path.join('experiments', '{}_{}'.format(
+        exp_name, datetime.now().strftime("%Y%m%d_%H%M")))
 
     os.makedirs(exp_dir, exist_ok=True)
 
@@ -429,8 +408,6 @@ def main(network_name,
     logger.info('==> Preparing data..')
 
     # Import experiment specific stuff
-    # from konfiguration import (
-        # train_loader, val_loader, num_classes, _class_map_dict)
 
     # Build train and validation loader
     train_loader = DataLoader(konfiguration.train_set,
@@ -443,7 +420,7 @@ def main(network_name,
                             sampler=konfiguration.val_sampler,
                             num_workers=6)
 
-    num_classes = konfiguration.num_classes
+    # num_classes = konfiguration.num_classes
     criterion = konfiguration.criterion
 
     # _class_map_dict = konfiguration.class_map_dict
@@ -468,7 +445,8 @@ def main(network_name,
         logger.info('==> Using pretrained model..')
 
     # Build network
-    net = get_network(network_name, num_classes, use_pretrained)
+    # net = get_network(network_name, num_classes, use_pretrained)
+    net = konfiguration.get_network(network_name, use_pretrained)
 
     if resume:
         # Load checkpoint.
