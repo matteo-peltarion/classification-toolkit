@@ -2,10 +2,8 @@
 Konfiguration template file for image classification task
 """
 
-# from lib.utils import get_data_augmentation_transforms
 from palladio.utils import get_data_augmentation_transforms
 
-# from torch.utils.data import WeightedRandomSampler, RandomSampler
 from torch.utils.data import RandomSampler
 
 from palladio.networks.utils import get_network as pd_get_network
@@ -19,7 +17,7 @@ from sklearn.metrics import (
 ####### Settings ####### #noqa
 ########################
 
-EXPERIMENT_NAME = "FashionMNIST"
+EXPERIMENT_NAME = "MLC"
 
 # Dataset
 
@@ -31,8 +29,6 @@ INPUT_NORMALIZATION = None
 train_transforms = get_data_augmentation_transforms(
     DATA_AUGMENTATION_LEVEL, INPUT_NORMALIZATION)
 
-# Use dataset FashionMNIST
-# https://github.com/zalandoresearch/fashion-mnist
 # XXX Set training dataset here
 train_set = None
 
@@ -45,20 +41,9 @@ val_transforms = get_data_augmentation_transforms(
 # XXX Set validation dataset here
 val_set = None
 
+# This variable should be a dictionary whose keys are the index of a class and
+# the values are strings describing the class.
 class_map_dict = None
-
-# class_map_dict = {
-    # 0: "T-shirt/top",
-    # 1: "Trouser",
-    # 2: "Pullover",
-    # 3: "Dress",
-    # 4: "Coat",
-    # 5: "Sandal",
-    # 6: "Shirt",
-    # 7: "Sneaker",
-    # 8: "Bag",
-    # 9: "Ankle boot",
-# }
 
 # Misc
 
@@ -142,18 +127,6 @@ def print_batch_log(outputs, targets, loss, logger, batch_idx,
 ###################
 ####### END ####### #noqa
 ###################
-
-# weights = train_set.make_weights_for_balanced_classes()
-
-# N_samples_per_epoch = len(weights)
-# This one is sort of eyeballed based on a few assumptions
-# TODO explain
-# N_samples_per_epoch = 50 * 7 * args.batch_size
-# N_samples_per_epoch = 1000 * BATCH_SIZE
-
-# For finding appropriate lr
-# N_samples_per_epoch = 50 * 7
-# train_sampler = WeightedRandomSampler(weights, N_samples_per_epoch)
 
 train_sampler = RandomSampler(train_set)
 val_sampler = RandomSampler(val_set)
