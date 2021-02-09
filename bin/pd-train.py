@@ -413,12 +413,12 @@ def main(network_name,
     train_loader = DataLoader(konfiguration.train_set,
                               batch_size=batch_size,
                               sampler=konfiguration.train_sampler,
-                              num_workers=6)
+                              num_workers=16)
 
     val_loader = DataLoader(konfiguration.val_set,
                             batch_size=batch_size,
                             sampler=konfiguration.val_sampler,
-                            num_workers=6)
+                            num_workers=16)
 
     # num_classes = konfiguration.num_classes
     criterion = konfiguration.criterion
