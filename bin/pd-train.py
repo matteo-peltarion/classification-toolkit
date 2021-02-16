@@ -26,8 +26,7 @@ import torch
 
 from torch.utils.data.dataloader import DataLoader
 
-# from lib.utils import (
-from palladio.utils import save_checkpoint
+from palladio.utils import save_checkpoint, cm2df
 
 # Required for loading configuration dynamically
 import importlib.util
@@ -35,6 +34,8 @@ import importlib.util
 # Imports for experiment tracking
 from sacred import Experiment
 from sacred.observers import MongoObserver
+
+from sklearn.metrics import confusion_matrix
 
 # global
 class_map_dict = None
@@ -282,6 +283,7 @@ def test(net, val_loader, criterion,
 
     all_targets = None
     all_outputs = None
+    all_predicted = None
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in tqdm(
@@ -290,6 +292,9 @@ def test(net, val_loader, criterion,
             outputs = net(inputs)
             loss = criterion(outputs, targets)
 
+            # Also generate predicted labels, for the classification case
+            _, predicted = torch.max(outputs, axis=1)
+
             test_loss += loss.item()
 
             # Collect all target and outputs for this epoch
@@ -297,6 +302,11 @@ def test(net, val_loader, criterion,
                 all_outputs = outputs
             else:
                 all_outputs = torch.cat((all_outputs, outputs))
+
+            if all_predicted is None:
+                all_predicted = predicted
+            else:
+                all_predicted = torch.cat((all_predicted, predicted))
 
             if all_targets is None:
                 all_targets = targets
@@ -310,8 +320,8 @@ def test(net, val_loader, criterion,
                     batch_idx, n_batches,
                     1, 'VALIDATION')  # Always print
 
-    # # Display confusion matrix
-    # cm = confusion_matrix(all_targets, all_predicted)
+    # Display confusion matrix
+    cm = confusion_matrix(all_targets.cpu(), all_predicted.cpu())
 
     # # Save confusion matrix
     # np.save(os.path.join(exp_dir, "confusion_matrix_test_latest.npy"), cm)
@@ -329,9 +339,9 @@ def test(net, val_loader, criterion,
                 # stats_per_class[k][score],
                 # epoch)
 
-    # cm_pretty = cm2df(cm, class_map_dict)
-
-    # print(cm_pretty)
+    cm_pretty = cm2df(
+        cm, [class_map_dict[c][:4] for c in range(len(class_map_dict))])
+    print(cm_pretty)
 
     # return test_loss/(batch_idx+1), acc, best_acc
     # return test_loss/(batch_idx+1), ""
