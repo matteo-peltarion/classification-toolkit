@@ -340,7 +340,8 @@ def test(net, val_loader, criterion,
                 # epoch)
 
     cm_pretty = cm2df(
-        cm, [class_map_dict[c][:4] for c in range(len(class_map_dict))])
+        cm,
+        [f"{c}_{class_map_dict[c][:4]}" for c in range(len(class_map_dict))])
     print(cm_pretty)
 
     # return test_loss/(batch_idx+1), acc, best_acc
@@ -435,13 +436,16 @@ def main(network_name,
 
     # _class_map_dict = konfiguration.class_map_dict
 
+    # TODO do these need to be global?
     global class_map_dict
     global build_metrics
+    global is_best_model
     global print_batch_log
 
     # class_map_dict = _class_map_dict
     class_map_dict = konfiguration.class_map_dict
     build_metrics = konfiguration.build_metrics
+    is_best_model = konfiguration.is_best_model
     print_batch_log = konfiguration.print_batch_log
 
     # Model.
@@ -547,6 +551,9 @@ def main(network_name,
     ### TRAINING ###  # noqa
     ################
 
+    # Initialize best value for accuracy to very little value
+    best_acc = -1
+
     # Training loop
     # for epoch in range(start_epoch, args.num_epochs):
     for epoch in range(start_epoch, num_epochs):
@@ -621,7 +628,6 @@ def main(network_name,
         logger.info("ETA: {}".format(eta.strftime("%d/%m/%Y %H:%M:%S")))
 
         # # Save checkpoint.
-        # acc = 100.*correct/total
         state = {
             'net': net.state_dict(),
             # 'acc': acc,
@@ -642,10 +648,10 @@ def main(network_name,
 
         # TODO reenable this
         # if acc > best_acc:
-        if False:
+        is_best, best_acc = is_best_model(metrics_val, best_acc)
+        if is_best:
             logger.info('Saving..')
             save_checkpoint(state, exp_dir, backup_as_best=True)
-            # best_acc = acc
         else:
             save_checkpoint(state, exp_dir, backup_as_best=False)
 

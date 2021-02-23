@@ -120,9 +120,22 @@ def build_metrics(outputs, targets):
     return metrics
 
 
+def is_best_model(new_metrics, current_best):
+    """
+    Returns True if the reference metric for the current model is better than
+    the previous best.
+    """
+
+    is_best = new_metrics['accuracy'] > current_best
+    if is_best:
+        current_best = new_metrics['accuracy']
+
+    return is_best, current_best
+
 ###################
 ####### END ####### #noqa
 ###################
+
 
 train_sampler = RandomSampler(train_set)
 val_sampler = RandomSampler(val_set)
