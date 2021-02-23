@@ -10,6 +10,7 @@ Click
 cryptography
 cycler
 decorator
+efficientnet_pytorch
 google-auth
 google-auth-oauthlib
 grpcio
