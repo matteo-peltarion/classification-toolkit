@@ -84,91 +84,6 @@ def config():
     weight_decay = 0  # noqa
 
 
-# def parse_args():
-
-    # # Parse args.
-    # parser = argparse.ArgumentParser(
-        # description='PyTorch classifier on custom dataset')
-
-    # # TODO move to konfiguration probably
-    # # parser.add_argument('--data-dir', help='Path to data', required=True)
-
-    # # parser.add_argument('--train_fraction', default=0.8, type=float,
-                        # # help='fraction of dataset to use for training')
-
-    # # parser.add_argument('--val_fraction', default=0.2, type=float,
-                        # # help='fraction of dataset to use for validation')
-
-    # # parser.add_argument('--input-features', nargs='+', type=str,
-                        # # help='List of columns where inpute features are',
-                        # # metavar='FEATURE_NAME',
-                        # # required=True)
-
-    # parser.add_argument('--exp-name', default='baseline', type=str,
-                        # help='name of experiment')
-
-    # parser.add_argument('--log-level', default='INFO',
-                        # choices=['DEBUG', 'INFO'], help='log-level to use')
-
-    # parser.add_argument('--data-augmentation-level', default=0, type=int,
-                        # help='Sets different options for DA.')
-
-    # parser.add_argument('--batch-size', default=4, type=int,
-                        # help='batch-size to use')
-
-    # parser.add_argument('--lr', default=1e-3, type=float,
-                        # help='Learning rate')
-
-    # parser.add_argument('--weight-decay', default=0.0, type=float,
-                        # help='Weight decay parameter for optimizer.')
-
-    # parser.add_argument('--scheduler-gamma', default=0.1, type=float,
-                        # help='Gamma parameter for learning rate scheduler.')
-
-    # parser.add_argument('--class-weights', nargs='+', type=float,
-                        # help='Weights for class (used for loss)')
-
-    # parser.add_argument('--milestones', nargs='+', type=int,
-                        # help='Milestones for lr scheduler')
-
-    # parser.add_argument('--network', default='resnet50',
-                        # choices=[
-                            # 'SimpleCNN', 'VGG16', 'Alexnet',
-                            # 'resnet34', 'resnet50', 'resnet101',
-                            # 'resnet152'],
-                        # help='network architecture')
-
-    # parser.add_argument('--use-pretrained',
-                        # action='store_true',
-                        # help='Use a pretrained model.')  # noqa
-
-    # # parser.add_argument('--num-epochs', default=10, type=int,
-                        # # help='Number of training epochs')
-
-    # parser.add_argument('--lr-finder',
-                        # action='store_true',
-                        # help='Exploratory run for finding best lr finder.')  # noqa
-
-    # parser.add_argument('--normalize-input',
-                        # action='store_true',
-                        # help='Normalize input using mean and variance computed on training set')  # noqa
-
-    # parser.add_argument('--optimizer', default='Adam',
-                        # choices=['Adam', 'SGD'],
-                        # help='Optimizer.')
-
-    # parser.add_argument('--konfiguration', '-K', type=str,
-                        # default='konfiguration.py',
-                        # help='Path to file containing configuration.')
-
-    # parser.add_argument('--resume', '-r',
-                        # action='store_true', help='resume from checkpoint')
-
-    # args = parser.parse_args()
-
-    # return args
-
-
 # Training.
 def train(net, train_loader, criterion, optimizer,
           batch_size, device, epoch, logger, exp_dir,
@@ -634,20 +549,14 @@ def main(network_name,
             'epoch': epoch,
         }
 
-        # # Add accuracy on validation set to tb
-        # writer.add_scalar("accuracy/val", acc, epoch)
-
         # # Compute balanced accuracy
         # bal_acc = balanced_accuracy_score(all_targets, all_predicted)
-
-        # writer.add_scalar("balanced_accuracy/val", bal_acc, epoch)
 
         # # Display accuracy
         # logger.info("Accuracy on validation set after epoch {}: {}".format(
             # epoch+1, acc))
 
-        # TODO reenable this
-        # if acc > best_acc:
+        # Save checkpoint and tag best model
         is_best, best_acc = is_best_model(metrics_val, best_acc)
         if is_best:
             logger.info('Saving..')
@@ -661,21 +570,6 @@ def main(network_name,
 
                 ex.log_scalar(f"{subset}.{metric}", v, epoch+1)
 
-        # Add scalars to tb
-        # Loss
-        # writer.add_scalars(
-            # 'Loss', {
-                # 'train': train_loss,
-                # 'val': test_loss},
-            # epoch)
-
-        # # Accuracy
-        # writer.add_scalars(
-            # 'Accuracy', {
-                # 'train': train_acc,
-                # 'val': test_acc},
-            # epoch)
-
         logger.info(40*"=")
         lr_scheduler.step()
 
@@ -688,13 +582,5 @@ def main(network_name,
     logger.info("Elapsed time: {}".format(
         timedelta(seconds=int(experiment_end - experiment_start))))
 
-    # writer.close()
-
     # Final value
     # return best_acc
-
-
-# XXX this is no longer used with sacred
-# if __name__ == '__main__':
-
-    # main()
