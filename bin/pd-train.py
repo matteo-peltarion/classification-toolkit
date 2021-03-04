@@ -84,6 +84,27 @@ def config():
     weight_decay = 0  # noqa
 
 
+def move_to(data, device):
+    """
+    Smart function to move several types of formats to device.
+    Works with tuples, lists and raw tensors.
+
+    Recursive implementation
+    """
+
+    if type(data) is torch.Tensor:
+        return data.to(device)
+
+    elif type(data) is tuple:
+        return tuple((move_to(d, device) for d in data))
+
+    elif type(data) is list:
+        return [move_to(d, device) for d in data]
+
+    else:
+        raise Exception(f"Unrecognized data type {type(data)} in move_to")
+
+
 # Training.
 def train(net, train_loader, criterion, optimizer,
           batch_size, device, epoch, logger, exp_dir,
@@ -115,7 +136,8 @@ def train(net, train_loader, criterion, optimizer,
     for batch_idx, (inputs, targets) in enumerate(train_loader):
 
         # Send tensors to the appropriate device
-        inputs, targets = inputs.to(device), targets.to(device)
+        # inputs, targets = inputs.to(device), targets.to(device)
+        inputs, targets = move_to(inputs, device), move_to(targets, device)
 
         # Set gradients to 0
         optimizer.zero_grad()
@@ -203,7 +225,10 @@ def test(net, val_loader, criterion,
     with torch.no_grad():
         for batch_idx, (inputs, targets) in tqdm(
                 enumerate(val_loader), total=n_batches):
-            inputs, targets = inputs.to(device), targets.to(device)
+
+            # inputs, targets = inputs.to(device), targets.to(device)
+            inputs, targets = move_to(inputs, device), move_to(targets, device)
+
             outputs = net(inputs)
             loss = criterion(outputs, targets)
 
