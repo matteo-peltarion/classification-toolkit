@@ -327,20 +327,8 @@ def main(network_name,
 
     os.makedirs(exp_dir, exist_ok=True)
 
-    # Writer will output to ./runs/ directory by default
-    # writer = SummaryWriter(
-        # log_dir="tb_logs/"+args.exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
-        # comment=args.exp_name)
-    # writer = SummaryWriter(
-        # log_dir="tb_logs/"+exp_name+"_"+datetime.now().strftime("%Y%m%d_%H%M"),  # noqa
-        # comment=exp_name)
-
     # Logging
     logger = logging.getLogger(__name__)
-
-    # XXX disabled logging setup, as it should be handled by sacred
-    # log_file = os.path.join(exp_dir, 'log.log')
-    # setup_logging(log_path=log_file, log_level=args.log_level, logger=logger)
 
     # Keep track of how much the whole experiment lasts
     experiment_start = time.time()
@@ -357,13 +345,6 @@ def main(network_name,
 
     # TODO possibly remove
     # npy_file = os.path.join(exp_dir, 'final_results.npy')
-
-    # XXX unnecessary, since everything should be saved by sacred
-    # Dump arguments in text file inside the experiment folder
-    # args_file = os.path.join(exp_dir, 'args.log')
-
-    # with open(args_file, 'w') as the_file:
-        # the_file.write(str(args))
 
     # Initialize datasets and loaders.
     logger.info('==> Preparing data..')
