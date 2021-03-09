@@ -289,6 +289,14 @@ def test(net, val_loader, criterion,
     return metrics
 
 
+@ex.capture
+def get_run_id(_run):
+    # print(_run._id)
+    # print(_run.experiment_info["name"])
+
+    return _run._id
+
+
 @ex.automain
 def main(network_name,
          batch_size,
@@ -309,11 +317,13 @@ def main(network_name,
         Explanation for parameter test
     """
 
+    # Retrieve run ID
+    run_id = get_run_id()
+
     exp_name = EXPERIMENT_NAME
 
-    # exp_dir = os.path.join('experiments', '{}'.format(args.exp_name))
-    exp_dir = os.path.join('experiments', '{}_{}'.format(
-        exp_name, datetime.now().strftime("%Y%m%d_%H%M")))
+    exp_dir = os.path.join('experiments', '{}_{}_{}'.format(
+        run_id, exp_name, datetime.now().strftime("%Y%m%d_%H%M")))
 
     os.makedirs(exp_dir, exist_ok=True)
 
