@@ -577,6 +577,8 @@ def main(network_name,
         if is_best:
             logger.info('Saving..')
             save_checkpoint(state, exp_dir, backup_as_best=True)
+            with open(os.path.join(exp_dir, "best_epoch"), 'w') as of:
+                of.write(f"{epoch}")
         else:
             save_checkpoint(state, exp_dir, backup_as_best=False)
 
