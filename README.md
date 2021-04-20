@@ -10,6 +10,8 @@ install the package (will be fixed properly in the future™).
 
 `pip install -e .`
 
+Also install additional pip packages with `pip install -r requirements.txt`.
+
 ## Usage
 
  1. Make sure that the mongodb for sacred is running (refer to
