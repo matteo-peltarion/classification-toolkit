@@ -5,7 +5,10 @@
 
 ## Installation
 
-`python setup.py install`
+Due to some unresolved issues regarding paths to resources, this is the way to
+install the package (will be fixed properly in the future™).
+
+`pip install -e .`
 
 ## Usage
 
