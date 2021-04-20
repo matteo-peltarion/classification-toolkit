@@ -20,5 +20,7 @@ install the package (will be fixed properly in the future™).
     `mlc` for multilabel classification).
  3. Edit generated file `konfiguration.py`, redefining the required functions
     and variables.
- 4. Launch training `pd-train.py`, possibly overriding default parameters using
+ 4. Start an omniboard instance on your machine, using command
+    `docker-compose up -d` while in the `extra/omniboard` folder.
+ 5. Launch training `pd-train.py`, possibly overriding default parameters using
     the Sacred syntax: e.g. `pd-train.py with lr=1e-5 batch_size=32`
