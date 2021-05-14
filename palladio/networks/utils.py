@@ -14,35 +14,35 @@ import torch.nn as nn
 
 def get_network(network_name, num_classes, use_pretrained, n_input_channels=3):
 
-    if network_name == 'efficientnet-b0':
-        if use_pretrained:
-            net = EfficientNet.from_pretrained(
-                'efficientnet-b0', in_channels=n_input_channels,
-                num_classes=num_classes)
-        else:
-            net = EfficientNet.from_name(
-                'efficientnet-b0', in_channels=n_input_channels,
-                num_classes=num_classes)
+    # if network_name == 'efficientnet-b0':
+        # if use_pretrained:
+            # net = EfficientNet.from_pretrained(
+                # 'efficientnet-b0', in_channels=n_input_channels,
+                # num_classes=num_classes)
+        # else:
+            # net = EfficientNet.from_name(
+                # 'efficientnet-b0', in_channels=n_input_channels,
+                # num_classes=num_classes)
 
-    if network_name == 'efficientnet-b4':
-        if use_pretrained:
-            net = EfficientNet.from_pretrained(
-                'efficientnet-b4', in_channels=n_input_channels,
-                num_classes=num_classes)
-        else:
-            net = EfficientNet.from_name(
-                'efficientnet-b4', in_channels=n_input_channels,
-                num_classes=num_classes)
+    # if network_name == 'efficientnet-b4':
+        # if use_pretrained:
+            # net = EfficientNet.from_pretrained(
+                # 'efficientnet-b4', in_channels=n_input_channels,
+                # num_classes=num_classes)
+        # else:
+            # net = EfficientNet.from_name(
+                # 'efficientnet-b4', in_channels=n_input_channels,
+                # num_classes=num_classes)
 
-    if network_name == 'efficientnet-b7':
-        if use_pretrained:
-            net = EfficientNet.from_pretrained(
-                'efficientnet-b7', in_channels=n_input_channels,
-                num_classes=num_classes)
-        else:
-            net = EfficientNet.from_name(
-                'efficientnet-b7', in_channels=n_input_channels,
-                num_classes=num_classes)
+    # if network_name == 'efficientnet-b7':
+        # if use_pretrained:
+            # net = EfficientNet.from_pretrained(
+                # 'efficientnet-b7', in_channels=n_input_channels,
+                # num_classes=num_classes)
+        # else:
+            # net = EfficientNet.from_name(
+                # 'efficientnet-b7', in_channels=n_input_channels,
+                # num_classes=num_classes)
 
     if network_name.startswith("densenet"):
         name_class_map = {
