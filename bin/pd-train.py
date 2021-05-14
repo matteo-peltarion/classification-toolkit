@@ -52,9 +52,17 @@ EXPERIMENT_NAME = konfiguration.EXPERIMENT_NAME
 
 ex = Experiment(EXPERIMENT_NAME)
 
+# ex.observers.append(MongoObserver(
+    # url='mongodb://sample:password@localhost/?authMechanism=SCRAM-SHA-1',
+    # db_name='db'))
+
 ex.observers.append(MongoObserver(
-    url='mongodb://sample:password@localhost/?authMechanism=SCRAM-SHA-1',
-    db_name='db'))
+    url=(
+        f'mongodb://{konfiguration.SACRED_DB_USERNAME}:'
+        f'{konfiguration.SACRED_DB_PASSWORD}@'
+        f'{konfiguration.SACRED_DB_HOST}:{konfiguration.SACRED_DB_PORT}'
+        f'/?authMechanism=SCRAM-SHA-1'),
+    db_name=konfiguration.SACRED_DB_NAME))
 
 
 @ex.config

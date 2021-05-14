@@ -16,6 +16,13 @@ from torch.nn import CrossEntropyLoss
 ####### Settings ####### #noqa
 ########################
 
+# Sacred connection parameters
+SACRED_DB_HOST = 'localhost'
+SACRED_DB_PORT = 27017
+SACRED_DB_USERNAME = 'sample'
+SACRED_DB_PASSWORD = 'password'
+SACRED_DB_NAME = 'db'
+
 EXPERIMENT_NAME = "FashionMNIST"
 
 # Dataset
