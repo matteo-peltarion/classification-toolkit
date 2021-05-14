@@ -323,7 +323,8 @@ def main(network_name,
     exp_name = EXPERIMENT_NAME
 
     exp_dir = os.path.join('experiments', '{}_{}_{}'.format(
-        run_id, exp_name, datetime.now().strftime("%Y%m%d_%H%M")))
+        run_id, exp_name.replace("/", "-"),
+        datetime.now().strftime("%Y%m%d_%H%M")))
 
     os.makedirs(exp_dir, exist_ok=True)
 
