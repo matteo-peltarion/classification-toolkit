@@ -2,7 +2,7 @@
 from torchvision.models.vgg import vgg16  # noqa
 from torchvision.models.alexnet import alexnet  # noqa
 from torchvision.models.resnet import (  # noqa
-    resnet50, resnet34, resnet101, resnet152)
+    resnet18, resnet34, resnet50, resnet101, resnet152)
 
 from efficientnet_pytorch import EfficientNet
 
@@ -41,19 +41,20 @@ def get_network(network_name, num_classes, use_pretrained, n_input_channels=3):
                 'efficientnet-b7', in_channels=n_input_channels,
                 num_classes=num_classes)
 
-    if network_name == 'resnet50':
-        net = resnet50(pretrained=use_pretrained)
-        net.fc = nn.Linear(2048, num_classes)
+    if network_name.startswith("resnet"):
+        name_class_map = {
+            'resnet18': resnet18,
+            'resnet34': resnet34,
+            'resnet50': resnet50,
+            'resnet101': resnet101,
+        }
 
-        if n_input_channels != 3:
-            net.conv1 = nn.Conv2d(
-                n_input_channels, 64, kernel_size=7, stride=2, padding=3,
-                bias=False)
+        torchvision_class = name_class_map[network_name]
 
-    if network_name == 'resnet101':
-        net = resnet101(pretrained=use_pretrained)
-        net.fc = nn.Linear(2048, num_classes)
+        net = torchvision_class(pretrained=use_pretrained)
+        net.fc = nn.Linear(net.fc.in_features, num_classes)
 
+        # If the number of input channels is != 3, adapt network
         if n_input_channels != 3:
             net.conv1 = nn.Conv2d(
                 n_input_channels, 64, kernel_size=7, stride=2, padding=3,
