@@ -7,7 +7,7 @@ from torchvision.models.resnet import (  # noqa
 from torchvision.models.densenet import (  # noqa
     densenet121)
 
-from efficientnet_pytorch import EfficientNet
+# from efficientnet_pytorch import EfficientNet
 
 import torch.nn as nn
 
