@@ -44,7 +44,7 @@ build_metrics = None
 # Load custom configuration
 spec = importlib.util.spec_from_file_location(
     "konfiguration",
-    "konfiguration.py")
+    os.environ.get("KONFIGURATION", "konfiguration.py"))
 konfiguration = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(konfiguration)
 

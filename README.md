@@ -21,7 +21,9 @@ Also install additional pip packages with `pip install -r requirements.txt`.
     templates (currently `classification` for multiclass classification and
     `mlc` for multilabel classification).
  3. Edit generated file `konfiguration.py`, redefining the required functions
-    and variables.
+    and variables. If you want to use a file with a different name/path, you
+    must set an environment variable named `KONFIGURATION` which points to the
+    file you want to use (useful if you want to save several configurations).
  4. Start an omniboard instance on your machine, using command
     `docker-compose up -d` while in the `extra/omniboard` folder.
  5. Launch training `pd-train.py`, possibly overriding default parameters using
