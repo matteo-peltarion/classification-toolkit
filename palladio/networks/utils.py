@@ -44,6 +44,18 @@ def get_network(network_name, num_classes, use_pretrained, n_input_channels=3):
                 # 'efficientnet-b7', in_channels=n_input_channels,
                 # num_classes=num_classes)
 
+    if network_name == 'vgg16':
+        net = vgg16(pretrained=use_pretrained)
+
+        # If the number of input channels is != 3, adapt network
+        if n_input_channels != 3:
+            net.features[0] = nn.Conv2d(
+                n_input_channels, 64, kernel_size=1, stride=1, padding=1)
+
+        # Replace the last linear layer so that the # of neurons is correct
+        net.classifier[6] = nn.Linear(
+            net.classifier[6].in_features, num_classes)
+
     if network_name.startswith("densenet"):
         name_class_map = {
             'densenet121': densenet121,
