@@ -37,14 +37,18 @@ from sacred.observers import MongoObserver
 
 from sklearn.metrics import confusion_matrix
 
+import shutil
+
 # global
 class_map_dict = None
 build_metrics = None
 
+KONFIGURATION_FILE_PATH = os.environ.get("KONFIGURATION", "konfiguration.py")
+
 # Load custom configuration
 spec = importlib.util.spec_from_file_location(
-    "konfiguration",
-    os.environ.get("KONFIGURATION", "konfiguration.py"))
+    "konfiguration", KONFIGURATION_FILE_PATH)
+
 konfiguration = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(konfiguration)
 
@@ -324,6 +328,11 @@ def main(network_name,
         datetime.now().strftime("%Y%m%d_%H%M")))
 
     os.makedirs(exp_dir, exist_ok=True)
+
+    # Make a copy of the configuration file in the experiment folder
+    shutil.copy(
+        KONFIGURATION_FILE_PATH,
+        os.path.join(exp_dir, os.path.basename(KONFIGURATION_FILE_PATH)))
 
     # Logging
     logger = logging.getLogger(__name__)
