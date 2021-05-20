@@ -86,8 +86,8 @@ def config():
 
     resume = False  # noqa
     class_weights = None  # noqa
-    milestones = list()  # noqa
-    scheduler_gamma = 0.1  # noqa
+    # milestones = list()  # noqa
+    # scheduler_gamma = 0.1  # noqa
     lr_finder = False  # XXX to change, should be separate task  # noqa
     weight_decay = 0  # noqa
 
@@ -261,8 +261,9 @@ def test(net, val_loader, criterion,
             else:
                 all_targets = torch.cat((all_targets, targets))
 
+    mean_loss = test_loss/(batch_idx+1)
     metrics = build_metrics(all_outputs, all_targets)
-    metrics['loss'] = test_loss/(batch_idx+1)
+    metrics['loss'] = mean_loss
 
     print_batch_log(all_outputs, all_targets, loss.item(), logger,
                     batch_idx, n_batches,
@@ -314,8 +315,8 @@ def main(network_name,
          resume,
          class_weights,
          optimizer_class,
-         milestones,
-         scheduler_gamma,
+         # milestones,
+         # scheduler_gamma,
          lr_finder,  # XXX to change, should be separate task
          weight_decay):
     """
@@ -435,15 +436,20 @@ def main(network_name,
     optimizer = optimizer_class(
         net.parameters(), lr=lr, weight_decay=weight_decay)
 
+    # LR scheduler (can be None)
+    # TODO complete
+
     # Learning rate scheduler must not be set when running the lr finder
     if not lr_finder:
 
-        # Set lr scheduler
-        lr_scheduler = optim.lr_scheduler.MultiStepLR(
-            optimizer, milestones=milestones,
-            last_epoch=start_epoch-1,
-            gamma=scheduler_gamma)  # default: 0.1
-            # gamma=0.3162)  # sqrt(0.1)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, **konfiguration.scheduler_kwargs)
+
+        # lr_scheduler = optim.lr_scheduler.MultiStepLR(
+            # optimizer, milestones=milestones,
+            # last_epoch=start_epoch-1,
+            # gamma=scheduler_gamma)  # default: 0.1
+            # # gamma=0.3162)  # sqrt(0.1)
 
     # epochs, train_losses, test_losses = [], [], []
     epochs = []
@@ -597,8 +603,14 @@ def main(network_name,
 
                 ex.log_scalar(f"{subset}.{metric}", v, epoch+1)
 
+        # Log learning rate
+        # ex.log_scalar("lr", scheduler.get_last_lr(), epoch+1)
+        ex.log_scalar("lr", optimizer.param_groups[0]['lr'], epoch+1)
+
         logger.info(40*"=")
-        lr_scheduler.step()
+
+        # TODO must consider other options for scheduler
+        scheduler.step(metrics_val['loss'])
 
     # Keep track of how much the whole experiment lasts
     experiment_end = time.time()
