@@ -67,6 +67,10 @@ class_map_dict = {
 # Specify loss
 criterion = CrossEntropyLoss()
 
+scheduler_kwargs = dict(
+    mode='min', factor=0.5, patience=5, min_lr=1e-8
+)
+
 
 def print_batch_log(outputs, targets, loss, logger, batch_idx,
                     n_batches, print_every, subset):
