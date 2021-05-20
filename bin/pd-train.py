@@ -409,18 +409,6 @@ def main(network_name,
     net = net.to(device)
 
     # Optimizer
-    # optimizer = None
-    # if optimizer == 'Adam':
-        # # optimizer = optim.Adam(
-            # # net.parameters(), lr=args.lr, weight_decay=args.weight_decay)  # noqa
-        # optimizer = optim.Adam(
-            # net.parameters(), lr=lr, weight_decay=weight_decay)
-    # elif args.optimizer == 'SGD':
-        # # TODO momentum might become a parameter?
-        # optimizer = optim.SGD(
-            # net.parameters(), lr=lr, momentum=0.9,
-            # weight_decay=args.weight_decay)
-
     optimizer = optimizer_class(
         net.parameters(), lr=lr, weight_decay=weight_decay)
 
