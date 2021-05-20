@@ -52,10 +52,6 @@ EXPERIMENT_NAME = konfiguration.EXPERIMENT_NAME
 
 ex = Experiment(EXPERIMENT_NAME)
 
-# ex.observers.append(MongoObserver(
-    # url='mongodb://sample:password@localhost/?authMechanism=SCRAM-SHA-1',
-    # db_name='db'))
-
 ex.observers.append(MongoObserver(
     url=(
         f'mongodb://{konfiguration.SACRED_DB_USERNAME}:'
@@ -78,16 +74,10 @@ def config():
 
     use_pretrained = True  # noqa
 
-    # optimizer = optim.Adam(
-        # net.parameters(), lr=lr, weight_decay=weight_decay)
-
-    # optimizer = 'Adam'  # noqa
     optimizer_class = optim.Adam  # noqa
 
     resume = False  # noqa
     class_weights = None  # noqa
-    # milestones = list()  # noqa
-    # scheduler_gamma = 0.1  # noqa
     lr_finder = False  # XXX to change, should be separate task  # noqa
     weight_decay = 0  # noqa
 
@@ -315,8 +305,6 @@ def main(network_name,
          resume,
          class_weights,
          optimizer_class,
-         # milestones,
-         # scheduler_gamma,
          lr_finder,  # XXX to change, should be separate task
          weight_decay):
     """
@@ -444,12 +432,6 @@ def main(network_name,
 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer, **konfiguration.scheduler_kwargs)
-
-        # lr_scheduler = optim.lr_scheduler.MultiStepLR(
-            # optimizer, milestones=milestones,
-            # last_epoch=start_epoch-1,
-            # gamma=scheduler_gamma)  # default: 0.1
-            # # gamma=0.3162)  # sqrt(0.1)
 
     # epochs, train_losses, test_losses = [], [], []
     epochs = []
