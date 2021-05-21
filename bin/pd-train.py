@@ -601,4 +601,4 @@ def main(network_name,
         timedelta(seconds=int(experiment_end - experiment_start))))
 
     # Final value
-    # return best_acc
+    return best_acc
