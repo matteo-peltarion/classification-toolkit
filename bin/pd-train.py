@@ -318,6 +318,9 @@ def main(network_name,
         Explanation for parameter test
     """
 
+    # Also add konfiguration file as artifact, to facilitate inspection
+    ex.add_artifact(KONFIGURATION_FILE_PATH)
+
     # Retrieve run ID
     run_id = get_run_id()
 
