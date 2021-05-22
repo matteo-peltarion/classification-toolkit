@@ -22,9 +22,7 @@ class EarlyStopping:
 
         self.counter = 0
 
-        self.best_score = None
-
-        self.early_stop = False
+        self.best_loss = None
 
         self.delta = delta
 
@@ -33,19 +31,20 @@ class EarlyStopping:
     def should_stop(self, loss):
 
         if self.best_loss is None:
+            # First iteration
             self.best_loss = loss
+            return False
         elif loss > self.best_loss - self.delta:
-
+            # Stop criterion met, interrupting
             self.counter += 1
-
             if self.verbose:
-
                 self.trace_func(
                     f'EarlyStopping counter: {self.counter}'
                     f'out of {self.patience}')
-
             if self.counter >= self.patience:
-                self.early_stop = True
+                return True
         else:
+            # New best loss found, restart counter
             self.best_loss = loss
             self.counter = 0
+            return False
