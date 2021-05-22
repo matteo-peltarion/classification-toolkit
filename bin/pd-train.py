@@ -27,6 +27,7 @@ import torch
 from torch.utils.data.dataloader import DataLoader
 
 from palladio.utils import save_checkpoint, cm2df
+from palladio.lib.pytorchtools import EarlyStopping
 
 # Required for loading configuration dynamically
 import importlib.util
@@ -479,6 +480,9 @@ def main(network_name,
     # Initialize best value for accuracy to very little value
     best_acc = -1
 
+    # Setup early stopping
+    early_stopping = EarlyStopping(patience=10, delta=0)
+
     # Training loop
     # for epoch in range(start_epoch, args.num_epochs):
     for epoch in range(start_epoch, num_epochs):
@@ -585,6 +589,13 @@ def main(network_name,
         # Log learning rate
         # ex.log_scalar("lr", scheduler.get_last_lr(), epoch+1)
         ex.log_scalar("lr", optimizer.param_groups[0]['lr'], epoch+1)
+
+        # Check for early stopping
+        if early_stopping.should_stop(metrics['val']['loss']):
+            logger.info(
+                "Early stopping criterion met, stopping run"
+                f"after epoch {epoch+1}")
+            break
 
         logger.info(40*"=")
 
