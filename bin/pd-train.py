@@ -76,7 +76,7 @@ def config():
 
     num_epochs = 10  # noqa
 
-    use_pretrained = True  # noqa
+    use_pretrained = None  # noqa
 
     optimizer_class = optim.Adam  # noqa
 
