@@ -50,6 +50,8 @@ class ResNet_AE(nn.Module):
         self.fc2 = nn.Linear(self.fc_hidden1, self.fc_hidden2)
         self.bn2 = nn.BatchNorm1d(self.fc_hidden2, momentum=0.01)
 
+        self.relu = nn.ReLU(inplace=True)
+
         # Decoder
         self.convTrans6 = nn.Sequential(
             nn.ConvTranspose2d(
@@ -99,7 +101,7 @@ class ResNet_AE(nn.Module):
         z = self.encode(x)
         x_reconst = self.decode(z)
 
-        return x_reconst, z
+        return x_reconst
 
 
 ### 👾👾👾 FROM NOW ON CHECK!!!  # noqa
