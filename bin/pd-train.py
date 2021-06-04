@@ -24,6 +24,8 @@ import torch.optim as optim
 
 import torch
 
+import numpy as np
+
 from torch.utils.data.dataloader import DataLoader
 
 from palladio.utils import save_checkpoint, cm2df
@@ -265,7 +267,9 @@ def test(net, val_loader, criterion,
                     1, 'VALIDATION')  # Always print
 
     # Display confusion matrix
-    cm = confusion_matrix(all_targets.cpu(), all_predicted.cpu())
+
+    # TODO experiment-specific, move in konfiguration
+    # cm = confusion_matrix(all_targets.cpu(), all_predicted.cpu())
 
     # # Save confusion matrix
     # np.save(os.path.join(exp_dir, "confusion_matrix_test_latest.npy"), cm)
@@ -283,10 +287,11 @@ def test(net, val_loader, criterion,
                 # stats_per_class[k][score],
                 # epoch)
 
-    cm_pretty = cm2df(
-        cm,
-        [f"{c}_{class_map_dict[c][:4]}" for c in range(len(class_map_dict))])
-    print(cm_pretty)
+    # TODO experiment-specific, move in konfiguration
+    # cm_pretty = cm2df(
+        # cm,
+        # [f"{c}_{class_map_dict[c][:4]}" for c in range(len(class_map_dict))])
+    # print(cm_pretty)
 
     # return test_loss/(batch_idx+1), acc, best_acc
     # return test_loss/(batch_idx+1), ""
@@ -481,7 +486,9 @@ def main(network_name,
     ################
 
     # Initialize best value for accuracy to very little value
-    best_acc = -1
+    # TODO change, this should be in konfiguration
+    # best_acc = np.inf
+    best_acc = konfiguration.best_acc
 
     # Setup early stopping
     early_stopping = EarlyStopping(patience=10, delta=0)
