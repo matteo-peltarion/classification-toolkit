@@ -163,6 +163,8 @@ def train(net, train_loader, criterion, optimizer,
                         batch_idx, n_batches,
                         print_every, 'TRAINING')
 
+        continue
+
         # Collect all target and outputs for this epoch
         if all_outputs is None:
             all_outputs = outputs
@@ -241,6 +243,8 @@ def test(net, val_loader, criterion,
             _, predicted = torch.max(outputs, axis=1)
 
             test_loss += loss.item()
+
+            continue
 
             # Collect all target and outputs for this epoch
             if all_outputs is None:
