@@ -136,6 +136,9 @@ def train(net, train_loader, criterion, optimizer,
     all_targets = None
     all_outputs = None
 
+    # Easy data parallelization
+    net = torch.nn.DataParallel(net)
+
     for batch_idx, (inputs, targets) in enumerate(train_loader):
 
         # Send tensors to the appropriate device
