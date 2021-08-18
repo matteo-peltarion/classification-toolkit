@@ -4,13 +4,15 @@ services:
   mongo:
     image: mongo
     ports:
-      - 127.0.0.1:27017:27017
+      - 127.0.0.1:27018:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: sample
       MONGO_INITDB_ROOT_PASSWORD: password
       MONGO_INITDB_DATABASE: db
     expose:
       - 27017
+    volumes:
+      - /home/matteo/repo/classification-toolkit/extra/omniboard/sacred_db:/data/db
     networks:
       - omniboard
 
@@ -18,7 +20,7 @@ services:
     image: vivekratnavel/omniboard:latest
     command: ["--mu", "mongodb://sample:password@mongo:27017/db?authSource=admin"]
     ports:
-      - 0.0.0.0:9000:9000
+      - 0.0.0.0:9178:9000
     networks:
       - omniboard
     depends_on:
